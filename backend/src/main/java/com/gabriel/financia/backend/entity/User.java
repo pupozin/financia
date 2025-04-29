@@ -1,6 +1,9 @@
 package com.gabriel.financia.backend.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import org.hibernate.validator.constraints.br.CPF;
 
 import java.time.LocalDate;
 
@@ -19,24 +22,20 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(name = "birth_date", nullable = false)
-    private LocalDate birthDate;
-
     @Column(unique = true, nullable = false, length = 11)
     private String cpf;
 
     public User() {}
 
+    // <-- o único construtor público
     public User(String name,
                 String email,
                 String password,
-                LocalDate birthDate,
                 String cpf) {
-        this.name      = name;
-        this.email     = email;
-        this.password  = password;
-        this.birthDate = birthDate;
-        this.cpf       = cpf;
+        this.name     = name;
+        this.email    = email;
+        this.password = password;
+        this.cpf      = cpf;
     }
 
     // getters & setters...
@@ -71,14 +70,6 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public LocalDate getBirthDate() {
-        return birthDate;
-    }
-
-    public void setBirthDate(LocalDate birthDate) {
-        this.birthDate = birthDate;
     }
 
     public String getCpf() {

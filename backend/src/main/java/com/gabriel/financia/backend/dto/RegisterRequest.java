@@ -14,9 +14,6 @@ public class RegisterRequest {
     @NotBlank @Size(min = 6)
     private String password;
 
-    @NotNull @Past
-    private LocalDate birthDate;
-
     @NotBlank @CPF
     private String cpf;
 
@@ -44,14 +41,6 @@ public class RegisterRequest {
 
     public void setPassword(@NotBlank @Size(min = 6) String password) {
         this.password = password;
-    }
-
-    public @NotNull @Past LocalDate getBirthDate() {
-        return birthDate;
-    }
-
-    public void setBirthDate(@NotNull @Past LocalDate birthDate) {
-        this.birthDate = birthDate;
     }
 
     public @NotBlank @CPF String getCpf() {

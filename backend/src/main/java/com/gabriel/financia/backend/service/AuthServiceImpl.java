@@ -28,7 +28,6 @@ public class AuthServiceImpl implements AuthService {
                 req.getName(),
                 req.getEmail(),
                 encoder.encode(req.getPassword()),
-                req.getBirthDate(),
                 req.getCpf()
         );
         repo.save(u);
