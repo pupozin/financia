@@ -34,7 +34,6 @@ class ApiService {
     final resp  = await http.post(
       url,
       headers: {
-        // note as aspas duplas e interpolação correta!
         'Authorization': 'Basic $creds',
       },
     );
