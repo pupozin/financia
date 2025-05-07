@@ -108,11 +108,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: _emailValid ? blue : Colors.grey.shade100, width: 2),
+                        borderSide: BorderSide(color: _emailValid ? Colors.white : Colors.grey.shade100, width: 2),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: _emailValid ? blue : Colors.grey.shade100, width: 2),
+                        borderSide: BorderSide(color: _emailValid ? Colors.white : Colors.grey.shade100, width: 2),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
