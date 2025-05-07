@@ -38,4 +38,9 @@ public class AuthServiceImpl implements AuthService {
         return repo.findByEmail(email)
                 .filter(u -> encoder.matches(rawPassword, u.getPassword()));
     }
+
+    @Override
+    public User save(User user) {
+        return repo.save(user);
+    }
 }

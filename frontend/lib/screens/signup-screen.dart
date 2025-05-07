@@ -43,26 +43,29 @@ class _SignupScreenState extends State<SignupScreen> {
     });
   }
 
-  void _handleSignup() async {
+ void _handleSignup() async {
     final ok = await _api.signup(
       name: _nameCtrl.text,
       cpf: _cpfCtrl.text,
       email: _emailCtrl.text,
       password: _pwdCtrl.text,
     );
-    if (ok) {
-      final logged = await _api.login(
-        email: _emailCtrl.text,
-        password: _pwdCtrl.text,
-      );
-      if (logged) {
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      } else {
-        setState(() => _error = 'Auto login failed');
-      }
-    } else {
+    if (!ok) {
       setState(() => _error = 'Signup failed');
+      return;
     }
+
+    final loginResult = await _api.login(
+      email: _emailCtrl.text,
+      password: _pwdCtrl.text,
+    );
+    if (loginResult == null) {
+      setState(() => _error = 'Auto login failed');
+      return;
+    }
+
+    final route = loginResult.firstAccess ? '/introduce' : '/dashboard';
+    Navigator.pushReplacementNamed(context, route);
   }
 
   @override

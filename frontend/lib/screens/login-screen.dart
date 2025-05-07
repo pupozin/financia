@@ -176,19 +176,26 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () async {
-                          final success = await _api.login(
-                            email: _emailCtrl.text,
-                            password: _pwdCtrl.text,
-                          );
-                          if (success) {
-                            Navigator.pushReplacementNamed(context, '/dashboard');
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Login falhou, tente novamente')),
-                            );
-                          }
-                        },
+                     onPressed: () async {
+  final result = await _api.login(
+    email: _emailCtrl.text,
+    password: _pwdCtrl.text,
+  );
+  if (result == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Credenciais inválidas')),
+    );
+    return;
+  }
+
+  if (result.firstAccess) {
+    // se for o primeiro acesso, abre a tela de introdução
+    Navigator.pushReplacementNamed(context, '/introduce');
+  } else {
+    // senão vai direto pro dashboard
+    Navigator.pushReplacementNamed(context, '/dashboard');
+  }
+},
                         child: Text(
                           'Log In',
                           style: GoogleFonts.poppins(

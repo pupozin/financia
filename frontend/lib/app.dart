@@ -3,6 +3,7 @@ import 'screens/home-screen.dart';
 import 'screens/login-screen.dart';
 import 'screens/signup-screen.dart';
 import 'screens/dashboard-screen.dart';
+import 'screens/introduce-screen.dart';
 
 class FinanciaApp extends StatelessWidget {
   const FinanciaApp({Key? key}) : super(key: key);
@@ -19,6 +20,7 @@ class FinanciaApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/dashboard': (context) => const DashboardScreen(),
+         '/introduce': (context) => const IntroduceScreen(),
       },
     );
   }

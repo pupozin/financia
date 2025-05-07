@@ -25,17 +25,17 @@ public class User {
     @Column(unique = true, nullable = false, length = 11)
     private String cpf;
 
+    @Column(nullable = false)
+    private boolean firstAccess = true;    // padrão true
+
     public User() {}
 
-    // <-- o único construtor público
-    public User(String name,
-                String email,
-                String password,
-                String cpf) {
-        this.name     = name;
-        this.email    = email;
-        this.password = password;
-        this.cpf      = cpf;
+    public User(String name, String email, String password, String cpf) {
+        this.name       = name;
+        this.email      = email;
+        this.password   = password;
+        this.cpf        = cpf;
+        this.firstAccess= true;
     }
 
     // getters & setters...
@@ -78,5 +78,13 @@ public class User {
 
     public void setCpf(String cpf) {
         this.cpf = cpf;
+    }
+
+    public boolean isFirstAccess() {
+        return firstAccess;
+    }
+
+    public void setFirstAccess(boolean firstAccess) {
+        this.firstAccess = firstAccess;
     }
 }

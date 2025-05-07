@@ -41,7 +41,7 @@ public class AuthController {
         }
 
         // 2) decode Base64 -> "email:password"
-        String b64 = authHeader.substring(6);
+        String b64     = authHeader.substring("Basic ".length());
         String decoded = new String(Base64.getDecoder().decode(b64), StandardCharsets.UTF_8);
         String[] parts = decoded.split(":", 2);
         if (parts.length != 2) {
@@ -50,7 +50,7 @@ public class AuthController {
                     .body("Invalid Basic auth format");
         }
 
-        String email = parts[0];
+        String email  = parts[0];
         String rawPwd = parts[1];
 
         // 3) delegate to AuthService.login(...)
@@ -62,11 +62,20 @@ public class AuthController {
         }
 
         User u = userOpt.get();
-        // 4) minimal JSON response
+
+        // 4) handle firstAccess flag
+        boolean first = u.isFirstAccess();
+        if (first) {
+            u.setFirstAccess(false);
+            authService.save(u);
+        }
+
+        // 5) build response
         Map<String, Object> body = Map.of(
-                "id",   u.getId(),
-                "name", u.getName(),
-                "email", u.getEmail()
+                "id",          u.getId(),
+                "name",        u.getName(),
+                "email",       u.getEmail(),
+                "firstAccess", first
         );
         return ResponseEntity.ok(body);
     }

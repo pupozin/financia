@@ -59,7 +59,10 @@ flutter:
 
   assets:
     - images/fundo-home.png
-
+    - images/background-introduce.png
+    - images/earnings-introduce.png
+    - images/dashboard-introduce.png
+    - images/financia-introduce.png
     
 
   # The following line ensures that the Material Icons font is
