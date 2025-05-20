@@ -1,0 +1,12 @@
+<form (ngSubmit)="register()">
+    <h2>Registro</h2>
+    <input type="text" placeholder="Nome" [(ngModel)]="name" name="name" required>
+    <input type="text" placeholder="CPF" [(ngModel)]="cpf" name="cpf" required>
+    <input type="password" placeholder="Senha" [(ngModel)]="password" name="password" required>
+    <select [(ngModel)]="bank" name="bank" required>
+      <option value="NIBANK">NIBANK</option>
+      <option value="BRAZILS_BANK">BRAZILS_BANK</option>
+      <option value="INTIBANK">INTIBANK</option>
+    </select>
+    <button type="submit">Registrar</button>
+  </form>

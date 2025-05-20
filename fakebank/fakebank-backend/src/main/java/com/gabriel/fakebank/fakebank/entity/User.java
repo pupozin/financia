@@ -4,6 +4,10 @@ import com.gabriel.fakebank.enums.Bank;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "\"user\"", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"cpf", "bank"})
+})
+
 public class User {
 
     @Id
@@ -12,15 +16,12 @@ public class User {
 
     private String name;
 
-    @Column(unique = true)
     private String cpf;
 
     private String password;
 
     @Enumerated(EnumType.STRING)
     private Bank bank;
-
-    private boolean firstAccess = true;
 
     // getters e setters
 
@@ -63,13 +64,5 @@ public class User {
 
     public void setBank(Bank bank) {
         this.bank = bank;
-    }
-
-    public boolean isFirstAccess() {
-        return firstAccess;
-    }
-
-    public void setFirstAccess(boolean firstAccess) {
-        this.firstAccess = firstAccess;
     }
 }
