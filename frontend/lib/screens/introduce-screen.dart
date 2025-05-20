@@ -50,7 +50,7 @@ class _IntroduceScreenState extends State<IntroduceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const blue = Color(0xFF0066FF);
+    const blue = Color.fromARGB(255, 0, 0, 0);
     final height = MediaQuery.of(context).size.height;
 
     return Scaffold(
