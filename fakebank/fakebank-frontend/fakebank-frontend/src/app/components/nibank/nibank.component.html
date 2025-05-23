@@ -1,1 +1,30 @@
-<p>nibank works!</p>
+<h2>Bem-vindo ao NIBANK</h2>
+
+<!-- Adicionar dinheiro -->
+<section>
+  <h3>Adicionar dinheiro</h3>
+  <input type="text" placeholder="Descrição" [(ngModel)]="income.description">
+  <input type="number" placeholder="Valor" [(ngModel)]="income.amount">
+  <input type="text" placeholder="Pagador" [(ngModel)]="income.payer">
+  <input type="text" placeholder="Categoria" [(ngModel)]="income.category">
+  <button (click)="addIncome()">Adicionar</button>
+</section>
+
+<!-- Pagar com débito -->
+<section>
+  <h3>Pagamento com Débito</h3>
+  <input type="text" placeholder="Descrição" [(ngModel)]="debit.description">
+  <input type="number" placeholder="Valor" [(ngModel)]="debit.amount">
+  <input type="text" placeholder="Destinatário" [(ngModel)]="debit.payer">
+  <input type="text" placeholder="Categoria" [(ngModel)]="debit.category">
+  <button (click)="payWithDebit()">Pagar</button>
+</section>
+
+<!-- Ver fatura -->
+<section>
+  <h3>Fatura do mês</h3>
+  <button (click)="viewInvoice()">Ver fatura</button>
+  <ul>
+    <li *ngFor="let f of fatura">{{ f.description }} - {{ f.amount }}</li>
+  </ul>
+</section>
