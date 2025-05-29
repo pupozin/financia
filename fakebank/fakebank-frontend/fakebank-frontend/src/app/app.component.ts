@@ -7,4 +7,7 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'fakebank-frontend';
+    isLoggedIn(): boolean {
+    return !!localStorage.getItem('cpf'); // se tiver CPF, está logado
+  }
 }

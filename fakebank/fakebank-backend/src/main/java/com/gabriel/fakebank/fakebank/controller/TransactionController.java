@@ -3,6 +3,7 @@ package com.gabriel.fakebank.fakebank.controller;
 import com.gabriel.fakebank.enums.Bank;
 import com.gabriel.fakebank.fakebank.dto.MonthlySummaryDto;
 import com.gabriel.fakebank.fakebank.dto.TransactionDto;
+import com.gabriel.fakebank.fakebank.entity.Transaction;
 import com.gabriel.fakebank.fakebank.service.TransactionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -80,4 +81,19 @@ public class TransactionController {
     ) {
         return ResponseEntity.ok(service.getMonthlySummary(cpf, bank, month, year));
     }
+
+    @GetMapping("/unpaid-installments/{cpf}/{bank}")
+    public ResponseEntity<List<Transaction>> getUnpaidInstallments(
+            @PathVariable String cpf,
+            @PathVariable Bank bank
+    ) {
+        return ResponseEntity.ok(service.getUnpaidInstallments(cpf, bank));
+    }
+
+    @PostMapping("/pay-installment/{id}")
+    public ResponseEntity<String> payInstallment(@PathVariable Long id) {
+        service.payInstallment(id);
+        return ResponseEntity.ok("Parcela paga com sucesso!");
+    }
+
 }

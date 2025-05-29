@@ -17,6 +17,9 @@ public class Transaction {
 
     private String cpf;
 
+    @Column(nullable = false)
+    private boolean paid = false; // false por padrão
+
     @Enumerated(EnumType.STRING)
     private Bank bank;
 
@@ -132,5 +135,13 @@ public class Transaction {
 
     public void setInstallmentNumber(Integer installmentNumber) {
         this.installmentNumber = installmentNumber;
+    }
+
+    public boolean isPaid() {
+        return paid;
+    }
+
+    public void setPaid(boolean paid) {
+        this.paid = paid;
     }
 }

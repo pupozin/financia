@@ -101,19 +101,16 @@ public class TransactionService {
     }
 
     public List<Transaction> getInvoice(String cpf, Bank bank, int month, int year) {
-        return repository.findByCpfAndBankAndMethodAndDateBetween(
-                cpf,
-                bank,
-                PaymentMethod.CREDIT,
-                LocalDate.of(year, month, 1),
-                LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth())
-        );
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end = YearMonth.of(year, month).atEndOfMonth();
+        return repository.findUnpaidInvoiceForMonth(cpf, bank, start, end);
     }
+
 
     public BigDecimal getBalance(String cpf, Bank bank) {
         BigDecimal income = repository.sumIncomeByCpfAndBank(cpf, bank);
-        BigDecimal expense = repository.sumExpenseByCpfAndBank(cpf, bank);
-        return income.subtract(expense);
+        BigDecimal debit = repository.sumDebitByCpfAndBank(cpf, bank); // agora só débito
+        return income.subtract(debit);
     }
 
     public MonthlySummaryDto getMonthlySummary(String cpf, Bank bank, int month, int year) {
@@ -135,5 +132,36 @@ public class TransactionService {
 
         return dto;
     }
+
+    public List<Transaction> getUnpaidInstallments(String cpf, Bank bank) {
+        return repository.findUnpaidCreditInstallments(cpf, bank);
+    }
+
+    public void payInstallment(Long id) {
+        Transaction original = repository.findById(id).orElseThrow();
+
+        if (!original.isPaid()) {
+            original.setPaid(true);
+            repository.save(original);
+
+            // Registra nova transação como débito
+            Transaction payment = new Transaction();
+            payment.setCpf(original.getCpf());
+            payment.setBank(original.getBank());
+            payment.setDescription("Pagamento da fatura: " + original.getDescription());
+            payment.setCategory("Fatura");
+            payment.setPayer("Sistema");
+            payment.setAmount(original.getAmount());
+            payment.setDate(LocalDate.now());
+            payment.setType(TransactionType.EXPENSE);
+            payment.setMethod(PaymentMethod.DEBIT);
+            payment.setInstallments(1);
+            payment.setInstallmentNumber(1);
+            payment.setPaid(true); // já foi paga
+
+            repository.save(payment);
+        }
+    }
+
 
 }

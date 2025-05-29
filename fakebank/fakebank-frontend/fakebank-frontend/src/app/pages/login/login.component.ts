@@ -21,6 +21,7 @@ export class LoginComponent {
     this.http.post<any>(`http://localhost:8081/api/auth/login?bank=${this.bank}`, {}, { headers })
       .subscribe({
         next: (res) => {
+          localStorage.setItem('cpf', res.cpf);
           alert('Login realizado com sucesso!');
 
           // Verifica o banco e redireciona para a rota correta

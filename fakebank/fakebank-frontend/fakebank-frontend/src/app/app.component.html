@@ -1,5 +1,5 @@
 <nav>
-  <a routerLink="/login">Login</a> |
-  <a routerLink="/register">Registrar</a>
+<a routerLink="/login" *ngIf="!isLoggedIn()">Login  |</a>
+<a routerLink="/register" *ngIf="!isLoggedIn()">  Registrar</a>
 </nav>
 <router-outlet></router-outlet>

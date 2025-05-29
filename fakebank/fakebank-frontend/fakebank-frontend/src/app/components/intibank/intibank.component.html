@@ -1,1 +1,65 @@
-<p>intibank works!</p>
+<h2>Bem-vindo ao Inti Bank</h2>
+<button (click)="logout()" style="float: right; margin-bottom: 16px;">Logout</button>
+
+
+<!-- Consultar Saldo -->
+<section>
+  <h3>Saldo atual</h3>
+  <p *ngIf="saldo !== null">R$ {{ saldo | number: '1.2-2' }}</p>
+  <button (click)="getSaldo()">Atualizar Saldo</button>
+</section>
+
+<!-- Adicionar dinheiro -->
+<section>
+  <h3>Adicionar dinheiro</h3>
+  <input type="text" placeholder="Descrição" [(ngModel)]="income.description">
+  <input type="number" placeholder="Valor" [(ngModel)]="income.amount">
+  <input type="text" placeholder="Pagador" [(ngModel)]="income.payer">
+  <input type="text" placeholder="Categoria" [(ngModel)]="income.category">
+  <button (click)="addIncome()">Adicionar</button>
+</section>
+
+<!-- Pagar com débito -->
+<section>
+  <h3>Pagamento com Débito</h3>
+  <input type="text" placeholder="Descrição" [(ngModel)]="debit.description">
+  <input type="number" placeholder="Valor" [(ngModel)]="debit.amount">
+  <input type="text" placeholder="Destinatário" [(ngModel)]="debit.payer">
+  <input type="text" placeholder="Categoria" [(ngModel)]="debit.category">
+  <button (click)="payWithDebit()">Pagar</button>
+</section>
+
+<!-- Ver fatura -->
+<section>
+  <h3>Fatura do mês</h3>
+  <button (click)="viewInvoice()">Ver fatura</button>
+  <ul>
+    <li *ngFor="let f of fatura">
+      {{ f.description }} - R$ {{ f.amount }}
+      ({{ f.installmentNumber }}/{{ f.installments }})
+    </li>
+  </ul>
+</section>
+
+<!-- Pagamento com crédito -->
+<section>
+  <h3>Pagamento com Crédito</h3>
+  <input type="text" placeholder="Descrição" [(ngModel)]="credit.description">
+  <input type="number" placeholder="Valor total" [(ngModel)]="credit.amount">
+  <input type="text" placeholder="Destinatário" [(ngModel)]="credit.payer">
+  <input type="text" placeholder="Categoria" [(ngModel)]="credit.category">
+  <input type="number" placeholder="Parcelas" [(ngModel)]="credit.installments">
+  <button (click)="payWithCredit()">Pagar</button>
+</section>
+
+<!-- Parcelas pendentes -->
+<section>
+  <h3>Parcelas pendentes</h3>
+  <button (click)="getUnpaidInstallments()">Atualizar lista</button>
+  <ul>
+    <li *ngFor="let p of parcelas">
+      {{ p.description }} - R$ {{ p.amount }} ({{ p.installmentNumber }}/{{ p.installments }}, {{ p.date }})
+      <button (click)="payInstallment(p.id)">Pagar</button>
+    </li>
+  </ul>
+</section>
