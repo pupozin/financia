@@ -13,6 +13,14 @@ class LoginResponse {
     required this.firstAccess, // 👈 e aqui
   });
 
+    Map<String, dynamic> toJson() => {
+    'name': name,
+    'email': email,
+    'cpf': cpf,
+    'firstAccess': firstAccess,
+  };
+
+
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
       id:           json['id'] as int,
