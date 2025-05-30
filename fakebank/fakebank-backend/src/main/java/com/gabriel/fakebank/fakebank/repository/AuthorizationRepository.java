@@ -12,4 +12,11 @@ public interface AuthorizationRepository extends JpaRepository<Authorization, Lo
     Optional<Authorization> findByCpfAndBank(String cpf, Bank bank);
 
     List<Authorization> findAllByCpfAndAuthorizedTrue(String cpf);
+
+    List<Authorization> findAllByAuthorizedFalse();
+
+    List<Authorization> findAllByCpfAndAuthorizedFalse(String cpf);
+
+    List<Authorization> findAllByCpfAndBankAndAuthorizedFalse(String cpf, Bank bank);
+
 }

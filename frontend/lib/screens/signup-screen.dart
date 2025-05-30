@@ -64,8 +64,14 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    final route = loginResult.firstAccess ? '/introduce' : '/dashboard';
-    Navigator.pushReplacementNamed(context, route);
+   final route = loginResult.firstAccess ? '/introduce' : '/dashboard';
+Navigator.pushReplacementNamed(
+  context,
+  route,
+  arguments: loginResult, // ✅ SEMPRE passar o LoginResponse completo
+);
+
+
   }
 
   @override

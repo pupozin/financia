@@ -49,4 +49,33 @@ class ApiService {
 
     return null;
   }
+
+  Future<List<String>> getAuthorizedBanks(String cpf) async {
+  final url = Uri.parse('http://$_host:8081/api/authorization/authorized-banks/$cpf');
+  final resp = await http.get(url);
+
+  if (resp.statusCode == 200) {
+    final data = jsonDecode(resp.body);
+    return List<String>.from(data['banks']);
+  }
+
+  return [];
 }
+
+Future<void> requestAuthorization(String cpf, String bank) async {
+  final url = Uri.parse('http://$_host:8081/api/authorization/grant?cpf=$cpf&bank=$bank');
+  await http.post(url); // sem tratamento, só dispara
+}
+
+Future<List<String>> getAvailableBanks() async {
+  final url = Uri.parse('http://$_host:8081/api/banks');
+  final resp = await http.get(url);
+
+  if (resp.statusCode == 200) {
+    return List<String>.from(jsonDecode(resp.body));
+  }
+
+  return [];
+}
+}
+

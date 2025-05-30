@@ -55,3 +55,4 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("SELECT t FROM Transaction t WHERE t.cpf = :cpf AND t.bank = :bank AND t.method = 'CREDIT' AND t.paid = false ORDER BY t.date ASC")
     List<Transaction> findUnpaidCreditInstallments(@Param("cpf") String cpf, @Param("bank") Bank bank);
 }
+

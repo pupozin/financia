@@ -1,27 +1,21 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { AuthorizationService } from '../../services/authorization.service';
 
 @Component({
   selector: 'app-nibank',
   templateUrl: './nibank.component.html',
   styleUrls: ['./nibank.component.css']
 })
-export class NibankComponent {
+export class NibankComponent implements OnInit {
   cpf = localStorage.getItem('cpf');
   bank = 'NIBANK';
-
-    constructor(private http: HttpClient, private router: Router) {}
-
-logout() {
-  localStorage.removeItem('cpf');
-  this.router.navigate(['/login']);
-}
-
 
   saldo: number | null = null;
   fatura: any[] = [];
   parcelas: any[] = [];
+  pendingRequests: any[] = [];
 
   income = {
     description: '',
@@ -44,7 +38,18 @@ logout() {
     payer: '',
     installments: 1
   };
+  user: any;
 
+  constructor(private http: HttpClient, private router: Router, private authService: AuthorizationService) {}
+
+  ngOnInit() {
+    this.loadPendingRequests();
+  }
+
+  logout() {
+    localStorage.removeItem('cpf');
+    this.router.navigate(['/login']);
+  }
 
   getSaldo() {
     this.http.get<any>(`http://localhost:8081/api/transaction/balance/${this.cpf}/${this.bank}`)
@@ -142,5 +147,20 @@ logout() {
         },
         error: (err) => console.error('Erro ao pagar parcela:', err)
       });
+  }
+
+loadPendingRequests() {
+  this.authService.getPendingRequests(this.cpf!, this.bank).subscribe(data => {
+    this.pendingRequests = data;
+  });
+}
+
+
+
+  approveRequest(id: number) {
+    this.authService.approveRequest(id).subscribe(() => {
+      alert('Solicitação aprovada!');
+      this.loadPendingRequests();
+    });
   }
 }

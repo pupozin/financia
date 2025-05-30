@@ -1,8 +1,8 @@
-// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api-service.dart';
+import '../models/login-response.dart'; // Caminho corrigido
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -22,7 +22,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Listener para validar senha com mais de 6 caracteres
     _pwdCtrl.addListener(() {
       setState(() => _pwdValid = _pwdCtrl.text.length > 5);
     });
@@ -37,10 +36,8 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Fundo completo
           Image.asset('images/fundo-home.png', fit: BoxFit.cover),
 
-          // Painel branco na base com curva convexa para fora no topo
           Align(
             alignment: Alignment.bottomCenter,
             child: ClipPath(
@@ -52,7 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          // Conteúdo: back button, título e inputs no fim
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -60,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  // Botão de voltar
                   Padding(
                     padding: const EdgeInsets.only(left: 4.0),
                     child: IconButton(
@@ -70,8 +65,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 100),
-
-                  // Título "Welcome Back"
                   Padding(
                     padding: const EdgeInsets.only(left: 15.0),
                     child: Text(
@@ -84,45 +77,39 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-
                   const Spacer(),
 
-                  // Email input
+                  // EMAIL
                   TextField(
                     controller: _emailCtrl,
-                    onChanged: (v) => setState(() => _emailValid = RegExp(r"^[^@]+@[^@]+\.[^@]+$").hasMatch(v)),
+                    onChanged: (v) => setState(() =>
+                      _emailValid = RegExp(r"^[^@]+@[^@]+\.[^@]+$").hasMatch(v)),
                     style: GoogleFonts.inter(fontSize: 14, color: _emailValid ? blue : Colors.black87),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.grey[100],
-                      prefixIcon: Icon(
-                        FontAwesomeIcons.envelope,
-                        size: 15,
-                        color: _emailValid ? blue : Colors.grey,
-                      ),
-                      suffixIcon: _emailValid
-                          ? Icon(FontAwesomeIcons.checkCircle, size: 15, color: blue)
-                          : null,
+                      prefixIcon: Icon(FontAwesomeIcons.envelope, size: 15, color: _emailValid ? blue : Colors.grey),
+                      suffixIcon: _emailValid ? Icon(FontAwesomeIcons.checkCircle, size: 15, color: blue) : null,
                       hintText: 'name@example.com',
                       hintStyle: GoogleFonts.inter(fontSize: 14, color: Colors.grey[500]),
                       contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: _emailValid ? Colors.white : Colors.grey.shade100, width: 2),
+                        borderSide: BorderSide(color: _emailValid ? Colors.white : Colors.grey.shade100),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: _emailValid ? Colors.white : Colors.grey.shade100, width: 2),
+                        borderSide: BorderSide(color: _emailValid ? Colors.white : Colors.grey.shade100),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white, width: 2),
+                        borderSide: const BorderSide(color: Colors.white),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Password input
+                  // PASSWORD
                   TextField(
                     controller: _pwdCtrl,
                     obscureText: !_pwdVisible,
@@ -130,17 +117,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.grey[100],
-                      prefixIcon: Icon(
-                        FontAwesomeIcons.lock,
-                        size: 15,
-                        color: _pwdValid ? blue : Colors.grey,
-                      ),
+                      prefixIcon: Icon(FontAwesomeIcons.lock, size: 15, color: _pwdValid ? blue : Colors.grey),
                       suffixIcon: IconButton(
-                        icon: Icon(
-                          _pwdVisible ? FontAwesomeIcons.eyeSlash : FontAwesomeIcons.eye,
-                          size: 15,
-                          color: _pwdValid ? blue : Colors.grey,
-                        ),
+                        icon: Icon(_pwdVisible ? FontAwesomeIcons.eyeSlash : FontAwesomeIcons.eye, size: 15, color: _pwdValid ? blue : Colors.grey),
                         onPressed: () => setState(() => _pwdVisible = !_pwdVisible),
                       ),
                       hintText: 'Password',
@@ -148,22 +127,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: _pwdValid ? blue : Colors.grey.shade100, width: 2),
+                        borderSide: BorderSide(color: _pwdValid ? blue : Colors.grey.shade100),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: _pwdValid ? blue : Colors.grey.shade100, width: 2),
+                        borderSide: BorderSide(color: _pwdValid ? blue : Colors.grey.shade100),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white, width: 2),
+                      focusedBorder: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(8)),
+                        borderSide: BorderSide(color: Colors.white),
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 24),
 
-                  // Botão Login a 30px do bottom
+                  // BOTÃO LOGIN
                   Padding(
                     padding: const EdgeInsets.only(bottom: 30.0),
                     child: SizedBox(
@@ -172,30 +150,35 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           backgroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                     onPressed: () async {
-  final result = await _api.login(
-    email: _emailCtrl.text,
-    password: _pwdCtrl.text,
-  );
-  if (result == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Credenciais inválidas')),
-    );
-    return;
-  }
+                        onPressed: () async {
+                          final result = await _api.login(
+                            email: _emailCtrl.text,
+                            password: _pwdCtrl.text,
+                          );
 
-  if (result.firstAccess) {
-    // se for o primeiro acesso, abre a tela de introdução
-    Navigator.pushReplacementNamed(context, '/introduce');
-  } else {
-    // senão vai direto pro dashboard
-    Navigator.pushReplacementNamed(context, '/dashboard');
-  }
-},
+                          if (result == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Credenciais inválidas')),
+                            );
+                            return;
+                          }
+
+                          if (result.firstAccess) {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              '/introduce',
+                              arguments: result,
+                            );
+                          } else {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              '/dashboard',
+                              arguments: result,
+                            );
+                          }
+                        },
                         child: Text(
                           'Log In',
                           style: GoogleFonts.poppins(
@@ -217,7 +200,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// Clipper para painel branco com curva convexa no topo
 class _BottomCurveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

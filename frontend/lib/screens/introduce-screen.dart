@@ -1,9 +1,14 @@
-// lib/screens/introduce_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/api-service.dart'; // 🔁 importa a API
+import '../models/login-response.dart'; // 👈 ISSO É ESSENCIAL
+
+
 
 class IntroduceScreen extends StatefulWidget {
-  const IntroduceScreen({Key? key}) : super(key: key);
+ final LoginResponse user;
+
+  const IntroduceScreen({Key? key, required this.user}) : super(key: key);
 
   @override
   State<IntroduceScreen> createState() => _IntroduceScreenState();
@@ -11,7 +16,9 @@ class IntroduceScreen extends StatefulWidget {
 
 class _IntroduceScreenState extends State<IntroduceScreen> {
   final _controller = PageController();
+  final _api = ApiService(); // ✅ instancia o serviço
   int _currentPage = 0;
+  bool _isLoading = false;
 
   final _pages = <_IntroPage>[
     _IntroPage(
@@ -37,16 +44,47 @@ class _IntroduceScreenState extends State<IntroduceScreen> {
     super.dispose();
   }
 
-  void _next() {
-    if (_currentPage < _pages.length - 1) {
-      _controller.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      Navigator.pushReplacementNamed(context, '/dashboard');
-    }
+ Future<void> _next() async {
+  if (_currentPage < _pages.length - 1) {
+    _controller.nextPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+    return;
   }
+
+  setState(() => _isLoading = true);
+
+  try {
+    final authorizedBanks = await _api.getAuthorizedBanks(widget.user.cpf);
+
+    if (authorizedBanks.isEmpty) {
+      final availableBanks = await _api.getAvailableBanks();
+      for (final bank in availableBanks) {
+        await _api.requestAuthorization(widget.user.cpf, bank);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Solicitação enviada aos bancos.')),
+      );
+    }
+
+   Navigator.pushReplacementNamed(
+  context,
+  '/dashboard',
+  arguments: widget.user, // LoginResponse completo
+);
+
+
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Erro ao verificar autorizações.')),
+    );
+  } finally {
+    setState(() => _isLoading = false);
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -57,16 +95,11 @@ class _IntroduceScreenState extends State<IntroduceScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // full-screen background
-          Image.asset(
-            'images/background-introduce.png',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('images/background-introduce.png', fit: BoxFit.cover),
 
           SafeArea(
             child: Column(
               children: [
-                // page view
                 Expanded(
                   child: PageView.builder(
                     controller: _controller,
@@ -79,13 +112,12 @@ class _IntroduceScreenState extends State<IntroduceScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const SizedBox(height: 90), // move image down
-                            // fixed-height image
+                            const SizedBox(height: 90),
                             SizedBox(
                               height: height * 0.35,
                               child: Image.asset(p.image, fit: BoxFit.contain),
                             ),
-                            const SizedBox(height: 30), // space before text
+                            const SizedBox(height: 30),
                             Text(
                               p.title,
                               style: GoogleFonts.poppins(
@@ -110,9 +142,8 @@ class _IntroduceScreenState extends State<IntroduceScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 8), // button slightly higher
+                const SizedBox(height: 8),
 
-                // Next / Get Started button — narrower
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 100.0),
                   child: SizedBox(
@@ -125,22 +156,25 @@ class _IntroduceScreenState extends State<IntroduceScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      onPressed: _next,
-                      child: Text(
-                        _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: blue,
-                        ),
-                      ),
+                      onPressed: _isLoading ? null : _next,
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.black)
+                          : Text(
+                              _currentPage == _pages.length - 1
+                                  ? 'Get Started'
+                                  : 'Next',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: blue,
+                              ),
+                            ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 48), // more space before dots
+                const SizedBox(height: 48),
 
-                // page-indicator dots
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(_pages.length, (i) {

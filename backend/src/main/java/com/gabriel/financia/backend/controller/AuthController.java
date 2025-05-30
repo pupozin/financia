@@ -75,6 +75,7 @@ public class AuthController {
                 "id",          u.getId(),
                 "name",        u.getName(),
                 "email",       u.getEmail(),
+                "cpf",         u.getCpf(),         // 👈 adiciona isso
                 "firstAccess", first
         );
         return ResponseEntity.ok(body);
