@@ -4,7 +4,7 @@
   <h4>Solicitações de autorização pendentes:</h4>
   <ul>
     <li *ngFor="let req of pendingRequests">
-      CPF: {{ req.cpf }} - Banco: {{ req.bank }}
+      CPF: {{ req.cpf }} - App: Financia
       <button (click)="approveRequest(req.id)">Aprovar</button>
     </li>
   </ul>

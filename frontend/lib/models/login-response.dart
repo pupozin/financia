@@ -23,7 +23,7 @@ class LoginResponse {
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
-      id:           json['id'] as int,
+      id: json['id'] != null ? json['id'] as int : 0,
       name:         json['name'] as String,
       email:        json['email'] as String,
       cpf:          json['cpf'] as String,

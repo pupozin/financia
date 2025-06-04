@@ -1,8 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api-service.dart';
-import '../models/login-response.dart'; // Caminho corrigido
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -19,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _emailValid = false;
   bool _pwdValid = false;
   bool _pwdVisible = false;
+  
 
   @override
   void initState() {
@@ -166,6 +169,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             return;
                           }
 
+                          final prefs = await SharedPreferences.getInstance();
+                          prefs.setString('user', jsonEncode(result.toJson()));
+
                           if (result.firstAccess) {
                             Navigator.pushReplacementNamed(
                               context,
@@ -216,3 +222,4 @@ class _BottomCurveClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
+

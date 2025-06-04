@@ -20,14 +20,7 @@ class FinanciaApp extends StatelessWidget {
         '/': (context) => const HomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
-        '/dashboard': (context) {
-  final args = ModalRoute.of(context)!.settings.arguments;
-  if (args is LoginResponse) {
-    return DashboardScreen(user: args);
-  } else {
-    return const HomeScreen(); // ou LoginScreen
-  }
-},
+        '/dashboard': (context) => const DashboardScreen(),
         '/introduce': (context) {
            final args = ModalRoute.of(context)!.settings.arguments as LoginResponse;
            return IntroduceScreen(user: args);
