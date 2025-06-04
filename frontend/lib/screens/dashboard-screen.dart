@@ -1,9 +1,15 @@
+// Todas as importações necessárias
 import 'package:flutter/material.dart';
 import 'package:frontend/models/login-response.dart';
+import 'package:frontend/screens/invoice-screen.dart';
 import '../services/api-service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'chart-screen.dart';
+import 'wallet-screen.dart';
+import 'profile-screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -17,13 +23,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late LoginResponse user;
   bool isLoading = true;
   int _selectedIndex = 0;
-
-  final List<Widget> _screens = const [
-    HomeDashboard(),
-    ChartScreen(),
-    WalletScreen(),
-    ProfileScreen(),
-  ];
+  bool _showMenu = false;
+  final List<Widget> _screens = [];
 
   @override
   void initState() {
@@ -39,7 +40,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final decoded = jsonDecode(stored);
       user = LoginResponse.fromJson(decoded);
       await _handleFirstAccess();
-      setState(() => isLoading = false);
+      setState(() {
+        _screens.addAll([
+          HomeDashboard(user: user),
+          const ChartScreen(),
+          const WalletScreen(),
+          const ProfileScreen(),
+        ]);
+        isLoading = false;
+      });
     } else {
       Navigator.pushReplacementNamed(context, '/login');
     }
@@ -48,26 +57,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _handleFirstAccess() async {
     if (user.firstAccess) {
       final banks = await _api.getAvailableBanks();
-
       for (final bank in banks) {
         await _api.requestAuthorization(user.cpf, bank);
       }
+     Future.delayed(Duration(seconds: 2), () async {
+  if (mounted) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Solicitação enviada'),
+        content: const Text('As solicitações de acesso foram enviadas aos bancos.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+      
+      user.firstAccess = false;
 
-      if (!mounted) return;
-
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Solicitação enviada'),
-          content: const Text('As solicitações de acesso foram enviadas aos bancos.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            )
-          ],
-        ),
-      );
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setString('user', jsonEncode(user.toJson()));
+  }
+});
     }
   }
 
@@ -78,115 +92,260 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.grey[900],
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white38,
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(FontAwesomeIcons.house), label: ''),
-          BottomNavigationBarItem(icon: Icon(FontAwesomeIcons.chartColumn), label: ''),
-          BottomNavigationBarItem(icon: Icon(FontAwesomeIcons.wallet), label: ''),
-          BottomNavigationBarItem(icon: Icon(FontAwesomeIcons.user), label: ''),
+      backgroundColor: const Color(0xFF121212),
+      body: Stack(
+        children: [
+          IndexedStack(index: _selectedIndex, children: _screens),
+
+          if (_showMenu)
+            Positioned(
+              top: 60,
+              right: 20,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                      child: Text("Logout", style: GoogleFonts.inter(color: Colors.white)),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      child: Text("Help", style: GoogleFonts.inter(color: Colors.white)),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      child: Text("Configurações", style: GoogleFonts.inter(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.only(top: 18),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 37, 36, 36),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(50),
+                  topRight: Radius.circular(50),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color.fromARGB(255, 143, 138, 138).withOpacity(0.5),
+                    spreadRadius: 4,
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: BottomNavigationBar(
+                 iconSize: 20, // 🔽 diminui o tamanho dos ícones (default é 24)
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                selectedItemColor: Colors.blue,
+                unselectedItemColor: Colors.white,
+                currentIndex: _selectedIndex,
+                type: BottomNavigationBarType.fixed,
+                onTap: (index) => setState(() {
+                  _showMenu = false;
+                  _selectedIndex = index;
+                }),
+                items: const [
+                  BottomNavigationBarItem(icon: Icon(FontAwesomeIcons.house), label: ''),
+                  BottomNavigationBarItem(icon: Icon(FontAwesomeIcons.chartColumn), label: ''),
+                  BottomNavigationBarItem(icon: Icon(FontAwesomeIcons.wallet), label: ''),
+                  BottomNavigationBarItem(icon: Icon(FontAwesomeIcons.user), label: ''),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
-
+// Tela principal do dashboard
 class HomeDashboard extends StatelessWidget {
-  const HomeDashboard({super.key});
+  final LoginResponse user;
+
+  const HomeDashboard({super.key, required this.user});
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const CircleAvatar(
-                  backgroundImage: AssetImage('images/avatar.png'),
-                  radius: 24,
-                ),
-                const SizedBox(width: 12),
-                const Text('Fernanda', style: TextStyle(color: Colors.white, fontSize: 18)),
-                const Spacer(),
-                Icon(FontAwesomeIcons.magnifyingGlass, color: Colors.white),
-                const SizedBox(width: 12),
-                Icon(FontAwesomeIcons.bars, color: Colors.white),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const Text('Your balance', style: TextStyle(color: Colors.white70)),
-            const Text('\$ 12,897.00',
-                style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+Widget build(BuildContext context) {
+  return SingleChildScrollView(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  const Text('September 2025',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      _MetricBox(title: 'Income', value: '\$4.200,00', color: Colors.green),
-                      _MetricBox(title: 'Expenses', value: '\$2.800,00', color: Colors.red),
-                    ],
+                  GestureDetector(
+                    onTap: () {
+                      final dashboard = context.findAncestorStateOfType<_DashboardScreenState>();
+                      if (dashboard != null) {
+                        dashboard.setState(() {
+                          dashboard._selectedIndex = 3;
+                          dashboard._showMenu = false;
+                        });
+                      }
+                    },
+                    child: const CircleAvatar(
+                      backgroundImage: AssetImage('images/avatar.png'),
+                      radius: 24,
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      _MetricBox(title: 'Net', value: '\$1.400,00', color: Colors.blue),
-                      _MetricBox(title: 'Budget', value: '65%', color: Colors.lightBlueAccent),
-                    ],
+                  const SizedBox(width: 12),
+                  Text(user.name, style: GoogleFonts.inter(color: Colors.white, fontSize: 18)),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      final dashboard = context.findAncestorStateOfType<_DashboardScreenState>();
+                      if (dashboard != null) {
+                        dashboard.setState(() => dashboard._showMenu = !dashboard._showMenu);
+                      }
+                    },
+                    child: const Icon(FontAwesomeIcons.bars, color: Colors.white),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
-            const Text('Invoice', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-                borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 45),
+              Padding(
+                padding: const EdgeInsets.only(left: 15),
+                child: Text('Your balance', style: GoogleFonts.poppins(color: Colors.white70)),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('\$1.749,00',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-                  SizedBox(height: 4),
-                  Text('Closes on Oct 5', style: TextStyle(color: Colors.redAccent)),
-                  Text('Due Oct 10', style: TextStyle(color: Colors.redAccent)),
-                ],
+              Padding(
+                padding: const EdgeInsets.only(left: 15, bottom: 20),
+                child: Text(
+                  '\$ 12,897.00',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 35,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Color.fromARGB(255, 37, 36, 36),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(65),
+              topRight: Radius.circular(65),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 20),
+                  child: Text('September 2025',
+                      style: GoogleFonts.poppins(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 20,
+                runSpacing: 16,
+                children: const [
+                  _MetricBox(title: 'Income', value: '\$4.200,00', color: Colors.green),
+                  _MetricBox(title: 'Expenses', value: '\$2.800,00', color: Colors.red),
+                  _MetricBox(title: 'Net', value: '\$1.400,00', color: Colors.blue),
+                  _MetricBox(title: 'Budget', value: '65%', color: Colors.lightBlueAccent),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 20),
+                  child: Text('Invoice',
+                      style: GoogleFonts.poppins(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                constraints: const BoxConstraints(maxWidth: 410),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 54, 53, 53),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 15),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const InvoiceScreen()),
+                            );
+                          },
+                          child: Text('View Details →',
+                              style: GoogleFonts.inter(color: Colors.white70)),
+                        ),
+                      ),
+                      Text(
+                        '\$1.749,00',
+                        style: GoogleFonts.poppins(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text('Closes on ', style: GoogleFonts.inter(color: Colors.white70)),
+                          Text('Oct 5', style: GoogleFonts.inter(color: Colors.redAccent)),
+                          const SizedBox(width: 20),
+                          Text('Due ', style: GoogleFonts.inter(color: Colors.white70)),
+                          Text('Oct 10', style: GoogleFonts.inter(color: Colors.redAccent)),
+                        ],
+                      ),
+                      const SizedBox(height: 23),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 100), // espaço extra antes da navbar
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
 }
 
+// Bloco das métricas financeiras
 class _MetricBox extends StatelessWidget {
   final String title;
   final String value;
@@ -197,47 +356,22 @@ class _MetricBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: MediaQuery.of(context).size.width * 0.38,
-      padding: const EdgeInsets.all(16),
+      width: MediaQuery.of(context).size.width * 0.4,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(12),
+        color: const Color.fromARGB(255, 54, 52, 52),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white70)),
+          Text(title, style: GoogleFonts.poppins(color: Colors.white70, fontSize: 16)),
           const SizedBox(height: 8),
-          Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(value,
+              style: GoogleFonts.poppins(
+                  color: color, fontSize: 19, fontWeight: FontWeight.bold)),
         ],
       ),
     );
-  }
-}
-
-class ChartScreen extends StatelessWidget {
-  const ChartScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Chart Screen', style: TextStyle(color: Colors.white)));
-  }
-}
-
-class WalletScreen extends StatelessWidget {
-  const WalletScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Wallet Screen', style: TextStyle(color: Colors.white)));
-  }
-}
-
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Profile Screen', style: TextStyle(color: Colors.white)));
   }
 }

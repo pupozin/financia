@@ -3,7 +3,7 @@ class LoginResponse {
   final String name;
   final String email;
   final String cpf;
-  final bool firstAccess; // 👈 voltou aqui
+  bool firstAccess; // 👈 voltou aqui
 
   LoginResponse({
     required this.id,
@@ -14,6 +14,7 @@ class LoginResponse {
   });
 
     Map<String, dynamic> toJson() => {
+    'id': id,
     'name': name,
     'email': email,
     'cpf': cpf,

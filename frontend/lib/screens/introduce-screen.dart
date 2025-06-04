@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api-service.dart'; // 🔁 importa a API
 import '../models/login-response.dart'; // 👈 ISSO É ESSENCIAL
 
@@ -69,11 +72,14 @@ class _IntroduceScreenState extends State<IntroduceScreen> {
       );
     }
 
-   Navigator.pushReplacementNamed(
+   final prefs = await SharedPreferences.getInstance();
+prefs.setString('user', jsonEncode(widget.user.toJson()));
+
+Navigator.pushReplacementNamed(
   context,
   '/dashboard',
-  arguments: widget.user, // LoginResponse completo
 );
+
 
 
   } catch (e) {
