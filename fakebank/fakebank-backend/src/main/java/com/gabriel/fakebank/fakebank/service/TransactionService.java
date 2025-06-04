@@ -3,11 +3,16 @@ package com.gabriel.fakebank.fakebank.service;
 import com.gabriel.fakebank.enums.Bank;
 import com.gabriel.fakebank.enums.PaymentMethod;
 import com.gabriel.fakebank.enums.TransactionType;
+import com.gabriel.fakebank.fakebank.dto.ConsolidatedDashboardDto;
+import com.gabriel.fakebank.fakebank.dto.InstallmentDto;
 import com.gabriel.fakebank.fakebank.dto.MonthlySummaryDto;
 import com.gabriel.fakebank.fakebank.dto.TransactionDto;
 import com.gabriel.fakebank.fakebank.entity.Transaction;
 import com.gabriel.fakebank.fakebank.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
+import com.gabriel.fakebank.fakebank.repository.AuthorizationRepository;
+import com.gabriel.fakebank.fakebank.entity.Authorization;
+
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -21,9 +26,67 @@ public class TransactionService {
 
     private final TransactionRepository repository;
 
-    public TransactionService(TransactionRepository repository) {
+    private final AuthorizationRepository authorizationRepository;
+
+    public TransactionService(TransactionRepository repository, AuthorizationRepository authorizationRepository) {
         this.repository = repository;
+        this.authorizationRepository = authorizationRepository;
     }
+
+    public ConsolidatedDashboardDto getConsolidatedDashboardData(String cpf, int month, int year) {
+        List<Bank> authorizedBanks = authorizationRepository.findAllByCpfAndAuthorizedTrue(cpf)
+                .stream().map(Authorization::getBank).toList();
+
+        BigDecimal totalIncome = BigDecimal.ZERO;
+        BigDecimal totalExpense = BigDecimal.ZERO;
+        BigDecimal totalBalance = BigDecimal.ZERO;
+        BigDecimal totalInvoice = BigDecimal.ZERO;
+
+        List<Transaction> allTransactions = new java.util.ArrayList<>();
+        List<InstallmentDto> allInstallments = new java.util.ArrayList<>();
+
+        for (Bank bank : authorizedBanks) {
+            // Income, expense e balance
+            MonthlySummaryDto summary = getMonthlySummary(cpf, bank, month, year);
+            totalIncome = totalIncome.add(summary.getIncome());
+            totalExpense = totalExpense.add(summary.getExpense());
+            totalBalance = totalBalance.add(getBalance(cpf, bank));
+
+            // Invoice: somar os valores da lista
+            List<Transaction> invoiceList = getInvoice(cpf, bank, month, year);
+            BigDecimal invoiceTotal = invoiceList.stream()
+                    .map(Transaction::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            totalInvoice = totalInvoice.add(invoiceTotal);
+
+            // Unpaid installments
+            List<Transaction> installments = getUnpaidInstallments(cpf, bank);
+            for (Transaction t : installments) {
+                InstallmentDto dto = new InstallmentDto();
+                dto.setId(t.getId());
+                dto.setDescription(t.getDescription());
+                dto.setAmount(t.getAmount());
+                dto.setDueDate(t.getDate());
+                allInstallments.add(dto);
+            }
+
+            // Histórico
+            allTransactions.addAll(listByCpfAndBank(cpf, bank.name()));
+        }
+
+        ConsolidatedDashboardDto dto = new ConsolidatedDashboardDto();
+        dto.setCpf(cpf);
+        dto.setAuthorizedBanks(authorizedBanks);
+        dto.setIncome(totalIncome);
+        dto.setExpense(totalExpense);
+        dto.setBalance(totalBalance);
+        dto.setInvoiceTotal(totalInvoice);
+        dto.setPendingInstallments(allInstallments);
+        dto.setTransactions(allTransactions);
+
+        return dto;
+    }
+
 
     public void saveTransaction(TransactionDto dto) {
         Transaction t = new Transaction();

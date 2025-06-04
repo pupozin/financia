@@ -1,5 +1,6 @@
 // lib/services/api_service.dart
 import 'dart:convert';
+import 'package:frontend/models/dashboard-data.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/login-response.dart';
@@ -8,6 +9,7 @@ class ApiService {
   // On Android emulator use 10.0.2.2; on web use localhost
   static final String _host = kIsWeb ? 'localhost' : '10.0.2.2';
   static final String baseUrl = 'http://$_host:8080/api/auth';
+  static final String _fakebankBase = 'http://$_host:8081/api';
 
   Future<bool> signup({
     required String name,
@@ -77,5 +79,19 @@ Future<List<String>> getAvailableBanks() async {
 
   return [];
 }
+
+ Future<DashboardData> getDashboardData(String cpf, int month, int year) async {
+    final url = Uri.parse('$_fakebankBase/transaction/consolidated/$cpf/$month/$year');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      return DashboardData.fromJson(json);
+    } else {
+      throw Exception('Erro ao buscar dados do dashboard');
+    }
+  }
 }
+
+
 

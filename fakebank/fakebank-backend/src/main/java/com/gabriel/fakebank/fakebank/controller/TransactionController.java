@@ -1,6 +1,7 @@
 package com.gabriel.fakebank.fakebank.controller;
 
 import com.gabriel.fakebank.enums.Bank;
+import com.gabriel.fakebank.fakebank.dto.ConsolidatedDashboardDto;
 import com.gabriel.fakebank.fakebank.dto.MonthlySummaryDto;
 import com.gabriel.fakebank.fakebank.dto.TransactionDto;
 import com.gabriel.fakebank.fakebank.entity.Transaction;
@@ -34,6 +35,16 @@ public class TransactionController {
     public ResponseEntity<?> listTransactions(@PathVariable String cpf, @PathVariable String bank) {
         return ResponseEntity.ok(service.listByCpfAndBank(cpf, bank));
     }
+
+    @GetMapping("/consolidated/{cpf}/{month}/{year}")
+    public ResponseEntity<ConsolidatedDashboardDto> getConsolidatedData(
+            @PathVariable String cpf,
+            @PathVariable int month,
+            @PathVariable int year
+    ) {
+        return ResponseEntity.ok(service.getConsolidatedDashboardData(cpf, month, year));
+    }
+
 
     @PostMapping("/income")
     public ResponseEntity<?> addIncome(@RequestBody TransactionDto dto) {

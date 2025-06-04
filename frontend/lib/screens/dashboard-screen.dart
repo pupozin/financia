@@ -60,28 +60,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
       for (final bank in banks) {
         await _api.requestAuthorization(user.cpf, bank);
       }
-     Future.delayed(Duration(seconds: 2), () async {
-  if (mounted) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Solicitação enviada'),
-        content: const Text('As solicitações de acesso foram enviadas aos bancos.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-      
-      user.firstAccess = false;
-
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString('user', jsonEncode(user.toJson()));
-  }
-});
+      Future.delayed(Duration(seconds: 2), () async {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Solicitação enviada'),
+              content: const Text('As solicitações de acesso foram enviadas aos bancos.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+          user.firstAccess = false;
+          final prefs = await SharedPreferences.getInstance();
+          prefs.setString('user', jsonEncode(user.toJson()));
+        }
+      });
     }
   }
 
@@ -99,29 +97,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           if (_showMenu)
             Positioned(
-              top: 60,
+              top: 75,
               right: 20,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                      child: Text("Logout", style: GoogleFonts.inter(color: Colors.white)),
-                    ),
-                    TextButton(
-                      onPressed: () {},
-                      child: Text("Help", style: GoogleFonts.inter(color: Colors.white)),
-                    ),
-                    TextButton(
-                      onPressed: () {},
-                      child: Text("Configurações", style: GoogleFonts.inter(color: Colors.white)),
-                    ),
-                  ],
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: 180,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _MenuItem(
+                        icon: FontAwesomeIcons.arrowRightFromBracket,
+                        label: 'Logout',
+                        onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+                      ),
+                      _MenuItem(
+                        icon: FontAwesomeIcons.circleQuestion,
+                        label: 'Help',
+                        onTap: () {},
+                      ),
+                      _MenuItem(
+                        icon: FontAwesomeIcons.gear,
+                        label: 'Configurações',
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -148,7 +161,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
               child: BottomNavigationBar(
-                 iconSize: 20, // 🔽 diminui o tamanho dos ícones (default é 24)
+                iconSize: 20,
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 selectedItemColor: Colors.blue,
@@ -173,6 +186,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
+
+class _MenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MenuItem({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16)),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: Colors.white),
+          const SizedBox(width: 8),
+          Text(label, style: GoogleFonts.inter(color: Colors.white)),
+        ],
+      ),
+    );
+  }
+}
+
 // Tela principal do dashboard
 class HomeDashboard extends StatelessWidget {
   final LoginResponse user;
@@ -218,7 +255,7 @@ Widget build(BuildContext context) {
                         dashboard.setState(() => dashboard._showMenu = !dashboard._showMenu);
                       }
                     },
-                    child: const Icon(FontAwesomeIcons.bars, color: Colors.white),
+                    child: const Icon(FontAwesomeIcons.barsStaggered, color: Colors.white),
                   ),
                 ],
               ),
