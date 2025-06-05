@@ -19,4 +19,8 @@ class DashboardData {
       invoiceTotal: (json['invoiceTotal'] ?? 0).toDouble(),
     );
   }
+
+  get invoice => null;
+
+  get budget => null;
 }
