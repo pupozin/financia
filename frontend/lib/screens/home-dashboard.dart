@@ -135,12 +135,18 @@ class HomeDashboard extends StatelessWidget {
                         Align(
                           alignment: Alignment.topRight,
                           child: TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const InvoiceScreen()),
-                              );
-                            },
+                          onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => InvoiceScreen(
+                                        invoiceTotal: data.invoiceTotal,
+                                        transactions: data.transactions,
+                                      ),
+                                    ),
+                                  );
+                                },
+
                             child: Text('View Details →',
                                 style: GoogleFonts.inter(color: Colors.white70)),
                           ),
@@ -157,10 +163,10 @@ class HomeDashboard extends StatelessWidget {
                         Row(
                           children: [
                             Text('Closes on ', style: GoogleFonts.inter(color: Colors.white70)),
-                            Text('Oct 5', style: GoogleFonts.inter(color: Colors.redAccent)),
+                            Text(_formatNextMonthDate(5), style: GoogleFonts.inter(color: Colors.redAccent)),
                             const SizedBox(width: 20),
                             Text('Due ', style: GoogleFonts.inter(color: Colors.white70)),
-                            Text('Oct 10', style: GoogleFonts.inter(color: Colors.redAccent)),
+                            Text(_formatNextMonthDate(10), style: GoogleFonts.inter(color: Colors.redAccent)),
                           ],
                         ),
                         const SizedBox(height: 23),
@@ -222,4 +228,18 @@ class _MetricBox extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatNextMonthDate(int day) {
+  final now = DateTime.now();
+  final nextMonth = (now.month == 12) ? 1 : now.month + 1;
+  final year = (now.month == 12) ? now.year + 1 : now.year;
+  final date = DateTime(year, nextMonth, day);
+
+  final monthName = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ][date.month - 1];
+
+  return '$monthName ${date.day}';
 }

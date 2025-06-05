@@ -97,11 +97,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadDashboardData() async {
     final now = DateTime.now();
-    try {
-      dashboardData = await _api.getDashboardData(user.cpf, now.month, now.year);
-    } catch (_) {
-      dashboardData = DashboardData(income: 0, expense: 0, balance: 0, invoiceTotal: 0);
-    }
+  try {
+  dashboardData = await _api.getDashboardData(user.cpf, now.month, now.year);
+} catch (e) {
+  print('Erro ao carregar dashboard: $e');
+  dashboardData = DashboardData(income: 0, expense: 0, balance: 0, invoiceTotal: 0, transactions: []);
+}
   }
 
   @override

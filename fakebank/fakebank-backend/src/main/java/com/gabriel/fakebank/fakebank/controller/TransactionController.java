@@ -107,4 +107,12 @@ public class TransactionController {
         return ResponseEntity.ok("Parcela paga com sucesso!");
     }
 
+    @GetMapping("/paid-invoices/{cpf}/{bank}")
+    public ResponseEntity<List<Transaction>> getPaidInvoices(
+            @PathVariable String cpf,
+            @PathVariable Bank bank
+    ) {
+        return ResponseEntity.ok(service.getPaidInvoices(cpf, bank));
+    }
+
 }

@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Data
 @AllArgsConstructor
@@ -15,4 +16,5 @@ public class InstallmentDto {
     private String description;
     private BigDecimal amount;
     private LocalDate dueDate;
+    private LocalTime time; // ⬅️ Adicione isso aqui
 }

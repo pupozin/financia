@@ -17,6 +17,7 @@ import com.gabriel.fakebank.fakebank.entity.Authorization;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,7 @@ public class TransactionService {
                 dto.setDescription(t.getDescription());
                 dto.setAmount(t.getAmount());
                 dto.setDueDate(t.getDate());
+                dto.setTime(t.getTime()); // ⬅️ Adicione esta linha
                 allInstallments.add(dto);
             }
 
@@ -166,7 +168,8 @@ public class TransactionService {
     public List<Transaction> getInvoice(String cpf, Bank bank, int month, int year) {
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = YearMonth.of(year, month).atEndOfMonth();
-        return repository.findUnpaidInvoiceForMonth(cpf, bank, start, end);
+
+        return repository.findCreditInstallmentsForMonth(cpf, bank, start, end);
     }
 
 
@@ -207,7 +210,6 @@ public class TransactionService {
             original.setPaid(true);
             repository.save(original);
 
-            // Registra nova transação como débito
             Transaction payment = new Transaction();
             payment.setCpf(original.getCpf());
             payment.setBank(original.getBank());
@@ -216,15 +218,19 @@ public class TransactionService {
             payment.setPayer("Sistema");
             payment.setAmount(original.getAmount());
             payment.setDate(LocalDate.now());
+            payment.setTime(LocalTime.now());
             payment.setType(TransactionType.EXPENSE);
             payment.setMethod(PaymentMethod.DEBIT);
             payment.setInstallments(1);
             payment.setInstallmentNumber(1);
-            payment.setPaid(true); // já foi paga
+            payment.setPaid(true);
+            payment.setLinkedTransactionId(original.getId());
 
             repository.save(payment);
         }
     }
 
-
+    public List<Transaction> getPaidInvoices(String cpf, Bank bank) {
+        return repository.findPaidInvoices(cpf, bank);
+    }
 }

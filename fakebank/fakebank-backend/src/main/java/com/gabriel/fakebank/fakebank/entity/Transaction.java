@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 public class Transaction {
@@ -28,6 +29,9 @@ public class Transaction {
     private String payer;
     private BigDecimal amount;
     private LocalDate date;
+
+    private Long linkedTransactionId;
+    private LocalTime time;
 
     @Enumerated(EnumType.STRING)
     private TransactionType type; // INCOME or EXPENSE
@@ -143,5 +147,21 @@ public class Transaction {
 
     public void setPaid(boolean paid) {
         this.paid = paid;
+    }
+
+    public Long getLinkedTransactionId() {
+        return linkedTransactionId;
+    }
+
+    public void setLinkedTransactionId(Long linkedTransactionId) {
+        this.linkedTransactionId = linkedTransactionId;
+    }
+
+    public LocalTime getTime() {
+        return time;
+    }
+
+    public void setTime(LocalTime time) {
+        this.time = time;
     }
 }
