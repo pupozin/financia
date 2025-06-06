@@ -3,16 +3,12 @@ package com.gabriel.fakebank.fakebank.service;
 import com.gabriel.fakebank.enums.Bank;
 import com.gabriel.fakebank.enums.PaymentMethod;
 import com.gabriel.fakebank.enums.TransactionType;
-import com.gabriel.fakebank.fakebank.dto.ConsolidatedDashboardDto;
-import com.gabriel.fakebank.fakebank.dto.InstallmentDto;
-import com.gabriel.fakebank.fakebank.dto.MonthlySummaryDto;
-import com.gabriel.fakebank.fakebank.dto.TransactionDto;
+import com.gabriel.fakebank.fakebank.dto.*;
 import com.gabriel.fakebank.fakebank.entity.Transaction;
 import com.gabriel.fakebank.fakebank.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import com.gabriel.fakebank.fakebank.repository.AuthorizationRepository;
 import com.gabriel.fakebank.fakebank.entity.Authorization;
-
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -20,13 +16,12 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.List;
-import java.util.Map;
+import java.util.ArrayList;
 
 @Service
 public class TransactionService {
 
     private final TransactionRepository repository;
-
     private final AuthorizationRepository authorizationRepository;
 
     public TransactionService(TransactionRepository repository, AuthorizationRepository authorizationRepository) {
@@ -43,36 +38,32 @@ public class TransactionService {
         BigDecimal totalBalance = BigDecimal.ZERO;
         BigDecimal totalInvoice = BigDecimal.ZERO;
 
-        List<Transaction> allTransactions = new java.util.ArrayList<>();
-        List<InstallmentDto> allInstallments = new java.util.ArrayList<>();
+        List<Transaction> allTransactions = new ArrayList<>();
+        List<InstallmentDto> allInstallments = new ArrayList<>();
 
         for (Bank bank : authorizedBanks) {
-            // Income, expense e balance
             MonthlySummaryDto summary = getMonthlySummary(cpf, bank, month, year);
             totalIncome = totalIncome.add(summary.getIncome());
             totalExpense = totalExpense.add(summary.getExpense());
             totalBalance = totalBalance.add(getBalance(cpf, bank));
 
-            // Invoice: somar os valores da lista
             List<Transaction> invoiceList = getInvoice(cpf, bank, month, year);
             BigDecimal invoiceTotal = invoiceList.stream()
                     .map(Transaction::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             totalInvoice = totalInvoice.add(invoiceTotal);
 
-            // Unpaid installments
             List<Transaction> installments = getUnpaidInstallments(cpf, bank);
             for (Transaction t : installments) {
-                InstallmentDto dto = new InstallmentDto();
-                dto.setId(t.getId());
-                dto.setDescription(t.getDescription());
-                dto.setAmount(t.getAmount());
-                dto.setDueDate(t.getDate());
-                dto.setTime(t.getTime()); // ⬅️ Adicione esta linha
-                allInstallments.add(dto);
+                InstallmentDto inst = new InstallmentDto();
+                inst.setId(t.getId());
+                inst.setDescription(t.getDescription());
+                inst.setAmount(t.getAmount());
+                inst.setDueDate(t.getDate());
+                inst.setTime(t.getTime());
+                allInstallments.add(inst);
             }
 
-            // Histórico
             allTransactions.addAll(listByCpfAndBank(cpf, bank.name()));
         }
 
@@ -84,11 +75,24 @@ public class TransactionService {
         dto.setBalance(totalBalance);
         dto.setInvoiceTotal(totalInvoice);
         dto.setPendingInstallments(allInstallments);
-        dto.setTransactions(allTransactions);
+
+        List<TransactionResponseDto> mapped = allTransactions.stream().map(t -> {
+            TransactionResponseDto tx = new TransactionResponseDto();
+            tx.setDescription(t.getDescription());
+            tx.setAmount(t.getAmount());
+            tx.setCategory(t.getCategory());
+            tx.setDate(t.getDate());
+            tx.setTime(t.getTime());
+            tx.setType(t.getType());
+            tx.setMethod(t.getMethod());
+            tx.setBank(t.getBank());
+            return tx;
+        }).toList();
+
+        dto.setTransactions(mapped);
 
         return dto;
     }
-
 
     public void saveTransaction(TransactionDto dto) {
         Transaction t = new Transaction();
@@ -99,11 +103,11 @@ public class TransactionService {
         t.setPayer(dto.getPayer());
         t.setAmount(dto.getAmount());
         t.setDate(LocalDate.now());
+        t.setTime(LocalTime.now());
         t.setType(dto.getType());
         t.setMethod(dto.getMethod());
         t.setInstallments(dto.getInstallments());
-        t.setInstallmentNumber(1); // por padrão, será 1 (vamos melhorar na parte de crédito depois)
-
+        t.setInstallmentNumber(1);
         repository.save(t);
     }
 
@@ -120,9 +124,9 @@ public class TransactionService {
         t.setPayer(dto.getPayer());
         t.setAmount(dto.getAmount());
         t.setDate(LocalDate.now());
+        t.setTime(LocalTime.now());
         t.setType(TransactionType.INCOME);
-        t.setMethod(PaymentMethod.CASH); // ou dto.getMethod() se quiser permitir selecionar
-
+        t.setMethod(PaymentMethod.CASH);
         repository.save(t);
     }
 
@@ -135,11 +139,11 @@ public class TransactionService {
         t.setPayer(dto.getPayer());
         t.setAmount(dto.getAmount());
         t.setDate(LocalDate.now());
+        t.setTime(LocalTime.now());
         t.setType(TransactionType.EXPENSE);
         t.setMethod(PaymentMethod.DEBIT);
         t.setInstallments(1);
         t.setInstallmentNumber(1);
-
         repository.save(t);
     }
 
@@ -155,12 +159,12 @@ public class TransactionService {
             t.setCategory(dto.getCategory());
             t.setPayer(dto.getPayer());
             t.setAmount(installmentValue);
-            t.setDate(LocalDate.now().plusMonths(i)); // cada parcela em um mês
+            t.setDate(LocalDate.now().plusMonths(i));
+            t.setTime(LocalTime.now());
             t.setType(TransactionType.EXPENSE);
             t.setMethod(PaymentMethod.CREDIT);
             t.setInstallments(installments);
             t.setInstallmentNumber(i + 1);
-
             repository.save(t);
         }
     }
@@ -168,21 +172,18 @@ public class TransactionService {
     public List<Transaction> getInvoice(String cpf, Bank bank, int month, int year) {
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = YearMonth.of(year, month).atEndOfMonth();
-
         return repository.findCreditInstallmentsForMonth(cpf, bank, start, end);
     }
 
-
     public BigDecimal getBalance(String cpf, Bank bank) {
         BigDecimal income = repository.sumIncomeByCpfAndBank(cpf, bank);
-        BigDecimal debit = repository.sumDebitByCpfAndBank(cpf, bank); // agora só débito
+        BigDecimal debit = repository.sumDebitByCpfAndBank(cpf, bank);
         return income.subtract(debit);
     }
 
     public MonthlySummaryDto getMonthlySummary(String cpf, Bank bank, int month, int year) {
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = YearMonth.of(year, month).atEndOfMonth();
-
         BigDecimal income = repository.sumMonthlyIncome(cpf, bank, start, end);
         BigDecimal expense = repository.sumMonthlyExpense(cpf, bank, start, end);
         BigDecimal balance = income.subtract(expense);
@@ -195,7 +196,6 @@ public class TransactionService {
         dto.setIncome(income);
         dto.setExpense(expense);
         dto.setBalance(balance);
-
         return dto;
     }
 
@@ -205,7 +205,6 @@ public class TransactionService {
 
     public void payInstallment(Long id) {
         Transaction original = repository.findById(id).orElseThrow();
-
         if (!original.isPaid()) {
             original.setPaid(true);
             repository.save(original);
@@ -225,7 +224,6 @@ public class TransactionService {
             payment.setInstallmentNumber(1);
             payment.setPaid(true);
             payment.setLinkedTransactionId(original.getId());
-
             repository.save(payment);
         }
     }

@@ -18,5 +18,5 @@ public class ConsolidatedDashboardDto {
     private BigDecimal invoiceTotal;
 
     private List<InstallmentDto> pendingInstallments;
-    private List<Transaction> transactions; // usa sua própria entidade
+    private List<TransactionResponseDto> transactions; // usa sua própria entidade
 }
