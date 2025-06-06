@@ -19,4 +19,5 @@ public class TransactionResponseDto {
     private TransactionType type;
     private PaymentMethod method;
     private Bank bank;
+    private Boolean paid;
 }

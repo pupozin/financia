@@ -22,6 +22,24 @@ class HomeDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+
+final unpaidCreditThisMonth = data.transactions.where((item) {
+  final method = item['method']?.toString().toUpperCase();
+  final paid = item['paid'];
+  final dateStr = item['date'];
+  if (method != 'CREDIT' || paid == true || dateStr == null) return false;
+
+  final parsedDate = DateTime.tryParse(dateStr);
+  if (parsedDate == null) return false;
+
+  return parsedDate.month == now.month && parsedDate.year == now.year;
+}).toList();
+
+final invoiceTotal = unpaidCreditThisMonth.fold<double>(
+  0.0,
+  (sum, item) => sum + (item['amount'] ?? 0),
+);
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,11 +154,15 @@ class HomeDashboard extends StatelessWidget {
                           alignment: Alignment.topRight,
                           child: TextButton(
                           onPressed: () {
+                            print('🚨 FIRST 5 TRANSACTIONS:');
+for (var t in data.transactions.take(5)) {
+  print(t);
+}
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => InvoiceScreen(
-                                        invoiceTotal: data.invoiceTotal,
+                                        invoiceTotal: invoiceTotal,
                                         transactions: data.transactions,
                                       ),
                                     ),
@@ -152,7 +174,7 @@ class HomeDashboard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '\$${data.invoiceTotal.toStringAsFixed(2)}',
+                         '\$${invoiceTotal.toStringAsFixed(2)}',
                           style: GoogleFonts.poppins(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,

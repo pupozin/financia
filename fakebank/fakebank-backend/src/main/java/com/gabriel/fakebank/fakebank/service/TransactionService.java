@@ -86,6 +86,7 @@ public class TransactionService {
             tx.setType(t.getType());
             tx.setMethod(t.getMethod());
             tx.setBank(t.getBank());
+            tx.setPaid(t.isPaid());
             return tx;
         }).toList();
 
