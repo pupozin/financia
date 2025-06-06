@@ -12,6 +12,8 @@ export class NibankComponent implements OnInit {
   cpf = localStorage.getItem('cpf');
   bank = 'NIBANK';
 
+  valorPagamentoFatura: number | null = null;
+
   saldo: number | null = null;
   fatura: any[] = [];
   parcelas: any[] = [];
@@ -163,4 +165,31 @@ loadPendingRequests() {
       this.loadPendingRequests();
     });
   }
+
+  pagarFatura() {
+  const today = new Date();
+  const month = today.getMonth() + 1;
+  const year = today.getFullYear();
+
+  const body = {
+    cpf: this.cpf,
+    bank: this.bank,
+    month: month,
+    year: year,
+    amount: 0  
+  };
+
+  this.http.post('http://localhost:8081/api/transaction/pay-monthly-invoice', body, { responseType: 'text' })
+    .subscribe({
+      next: () => {
+        alert('Fatura paga com sucesso!');
+        this.viewInvoice(); // atualiza a fatura
+        this.getSaldo();    // atualiza o saldo
+      },
+      error: err => {
+        console.error('Erro ao pagar fatura:', err);
+        alert('Erro ao pagar fatura.');
+      }
+    });
+}
 }

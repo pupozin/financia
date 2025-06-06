@@ -21,7 +21,7 @@ import java.util.ArrayList;
 @Service
 public class TransactionService {
 
-    private final TransactionRepository repository;
+    private static TransactionRepository repository = null;
     private final AuthorizationRepository authorizationRepository;
 
     public TransactionService(TransactionRepository repository, AuthorizationRepository authorizationRepository) {
@@ -94,6 +94,53 @@ public class TransactionService {
 
         return dto;
     }
+
+    public static void payMonthlyInvoice(String cpf, Bank bank, int month, int year, BigDecimal amountToPay) {
+        List<Transaction> openInstallments = repository.findCreditInstallmentsForMonth(
+                cpf, bank,
+                LocalDate.of(year, month, 1),
+                YearMonth.of(year, month).atEndOfMonth()
+        ).stream().filter(t -> !t.isPaid()).toList();
+
+        BigDecimal totalPaid = BigDecimal.ZERO;
+        List<Transaction> toMarkAsPaid = new ArrayList<>();
+
+        for (Transaction t : openInstallments) {
+            if (amountToPay != null && amountToPay.compareTo(BigDecimal.ZERO) > 0 &&
+                    totalPaid.add(t.getAmount()).compareTo(amountToPay) > 0) {
+                break;
+            }
+
+            t.setPaid(true);
+            toMarkAsPaid.add(t);
+            totalPaid = totalPaid.add(t.getAmount());
+        }
+
+        repository.saveAll(toMarkAsPaid);
+
+        if (!toMarkAsPaid.isEmpty()) {
+            String monthName = YearMonth.of(year, month).getMonth().name();
+
+            Transaction payment = new Transaction();
+            payment.setCpf(cpf);
+            payment.setBank(bank);
+            payment.setDescription("Payment %s".formatted(monthName));
+            payment.setCategory("invoice");
+            payment.setPayer("Usuário");
+            payment.setAmount(totalPaid);
+            payment.setDate(LocalDate.now());
+            payment.setTime(LocalTime.now());
+            payment.setType(TransactionType.EXPENSE);
+            payment.setMethod(PaymentMethod.DEBIT);
+            payment.setInstallments(1);
+            payment.setInstallmentNumber(1);
+            payment.setPaid(true);
+
+            repository.save(payment);
+        }
+    }
+
+
 
     public void saveTransaction(TransactionDto dto) {
         Transaction t = new Transaction();

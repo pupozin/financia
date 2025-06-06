@@ -3,6 +3,7 @@ package com.gabriel.fakebank.fakebank.controller;
 import com.gabriel.fakebank.enums.Bank;
 import com.gabriel.fakebank.fakebank.dto.ConsolidatedDashboardDto;
 import com.gabriel.fakebank.fakebank.dto.MonthlySummaryDto;
+import com.gabriel.fakebank.fakebank.dto.PayInvoiceRequestDto;
 import com.gabriel.fakebank.fakebank.dto.TransactionDto;
 import com.gabriel.fakebank.fakebank.entity.Transaction;
 import com.gabriel.fakebank.fakebank.service.TransactionService;
@@ -30,6 +31,13 @@ public class TransactionController {
         service.saveTransaction(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body("Transação registrada com sucesso.");
     }
+
+    @PostMapping("/pay-monthly-invoice")
+    public ResponseEntity<Void> payMonthlyInvoice(@RequestBody PayInvoiceRequestDto dto) {
+        TransactionService.payMonthlyInvoice(dto.getCpf(), dto.getBank(), dto.getMonth(), dto.getYear(), dto.getAmount());
+        return ResponseEntity.ok().build();
+    }
+
 
     @GetMapping("/{cpf}/{bank}")
     public ResponseEntity<?> listTransactions(@PathVariable String cpf, @PathVariable String bank) {

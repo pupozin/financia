@@ -24,22 +24,37 @@ class HomeDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
 
-final unpaidCreditThisMonth = data.transactions.where((item) {
-  final method = item['method']?.toString().toUpperCase();
-  final paid = item['paid'];
-  final dateStr = item['date'];
-  if (method != 'CREDIT' || paid == true || dateStr == null) return false;
+    final unpaidCreditThisMonth = data.transactions.where((item) {
+      final method = item['method']?.toString().toUpperCase();
+      final paid = item['paid'];
+      final dateStr = item['date'];
+      if (method != 'CREDIT' || paid == true || dateStr == null) return false;
 
-  final parsedDate = DateTime.tryParse(dateStr);
-  if (parsedDate == null) return false;
+      final parsedDate = DateTime.tryParse(dateStr);
+      if (parsedDate == null) return false;
 
-  return parsedDate.month == now.month && parsedDate.year == now.year;
-}).toList();
+      return parsedDate.month == now.month && parsedDate.year == now.year;
+    }).toList();
 
-final invoiceTotal = unpaidCreditThisMonth.fold<double>(
-  0.0,
-  (sum, item) => sum + (item['amount'] ?? 0),
-);
+    final invoiceTotal = unpaidCreditThisMonth.fold<double>(
+      0.0,
+      (sum, item) => sum + (item['amount'] ?? 0),
+    );
+
+    final totalDebitExpenses = data.transactions.where((item) {
+      final method = item['method']?.toString().toUpperCase();
+      final dateStr = item['date'];
+      if (method != 'DEBIT' || dateStr == null) return false;
+
+      final parsedDate = DateTime.tryParse(dateStr);
+      if (parsedDate == null) return false;
+
+      return parsedDate.month == now.month && parsedDate.year == now.year;
+    }).fold<double>(
+      0.0,
+      (sum, item) => sum + (item['amount'] ?? 0),
+    );
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,11 +132,11 @@ final invoiceTotal = unpaidCreditThisMonth.fold<double>(
                   runSpacing: 16,
                   children: [
                     _MetricBox(title: 'Income', value: '\$${data.income.toStringAsFixed(2)}', color: Colors.green),
-                    _MetricBox(title: 'Expenses', value: '\$${data.expense.toStringAsFixed(2)}', color: Colors.red),
+                    _MetricBox(title: 'Expenses', value: '\$${totalDebitExpenses.toStringAsFixed(2)}', color: Colors.red),
                     _MetricBox(title: 'Net', value: '\$${data.balance.toStringAsFixed(2)}', color: Colors.blue),
                     _MetricBox(
                       title: 'Budget',
-                      value: _calculateBudgetPercentage(data.income, data.expense),
+                      value: _calculateBudgetPercentage(data.income, totalDebitExpenses),
                       color: Colors.lightBlueAccent,
                     ),
                   ],
@@ -153,28 +168,23 @@ final invoiceTotal = unpaidCreditThisMonth.fold<double>(
                         Align(
                           alignment: Alignment.topRight,
                           child: TextButton(
-                          onPressed: () {
-                            print('🚨 FIRST 5 TRANSACTIONS:');
-for (var t in data.transactions.take(5)) {
-  print(t);
-}
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => InvoiceScreen(
-                                        invoiceTotal: invoiceTotal,
-                                        transactions: data.transactions,
-                                      ),
-                                    ),
-                                  );
-                                },
-
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => InvoiceScreen(
+                                    invoiceTotal: invoiceTotal,
+                                    transactions: data.transactions,
+                                  ),
+                                ),
+                              );
+                            },
                             child: Text('View Details →',
                                 style: GoogleFonts.inter(color: Colors.white70)),
                           ),
                         ),
                         Text(
-                         '\$${invoiceTotal.toStringAsFixed(2)}',
+                          '\$${invoiceTotal.toStringAsFixed(2)}',
                           style: GoogleFonts.poppins(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -206,11 +216,10 @@ for (var t in data.transactions.take(5)) {
   }
 
   String _calculateBudgetPercentage(double income, double expense) {
-  if (income == 0) return '0%';
-  final percent = ((income - expense) / income) * 100;
-  return '${percent.toStringAsFixed(0)}%';
-}
-
+    if (income == 0) return '0%';
+    final percent = ((income - expense) / income) * 100;
+    return '${percent.toStringAsFixed(0)}%';
+  }
 
   String _getMonthYear() {
     final now = DateTime.now();

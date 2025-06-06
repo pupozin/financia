@@ -16,6 +16,8 @@ class CategoryHelper {
         return FontAwesomeIcons.book;
       case 'entertainment':
         return FontAwesomeIcons.tv;
+      case 'invoice':
+        return FontAwesomeIcons.circleCheck;
       default:
         return FontAwesomeIcons.circle; // categoria genérica
     }
