@@ -1,10 +1,7 @@
 package com.gabriel.fakebank.fakebank.controller;
 
 import com.gabriel.fakebank.enums.Bank;
-import com.gabriel.fakebank.fakebank.dto.ConsolidatedDashboardDto;
-import com.gabriel.fakebank.fakebank.dto.MonthlySummaryDto;
-import com.gabriel.fakebank.fakebank.dto.PayInvoiceRequestDto;
-import com.gabriel.fakebank.fakebank.dto.TransactionDto;
+import com.gabriel.fakebank.fakebank.dto.*;
 import com.gabriel.fakebank.fakebank.entity.Transaction;
 import com.gabriel.fakebank.fakebank.service.TransactionService;
 import org.springframework.http.HttpStatus;
@@ -12,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +34,51 @@ public class TransactionController {
     public ResponseEntity<Void> payMonthlyInvoice(@RequestBody PayInvoiceRequestDto dto) {
         TransactionService.payMonthlyInvoice(dto.getCpf(), dto.getBank(), dto.getMonth(), dto.getYear(), dto.getAmount());
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/paid-invoices/months/{cpf}/{bank}")
+    public ResponseEntity<List<MonthYearDto>> getInvoiceMonths(
+            @PathVariable String cpf,
+            @PathVariable Bank bank
+    ) {
+        List<Transaction> transactions = service.getPaidInvoices(cpf, bank);
+
+        List<MonthYearDto> months = transactions.stream()
+                .filter(t -> {
+                    var method = t.getMethod().toString().toUpperCase();
+                    var category = t.getCategory() != null ? t.getCategory().toLowerCase() : "";
+                    return method.equals("CREDIT") || (method.equals("DEBIT") && category.equals("invoice"));
+                })
+                .map(t -> new MonthYearDto(t.getDate().getMonthValue(), t.getDate().getYear()))
+                .distinct()
+                .sorted(
+                        Comparator.comparing(MonthYearDto::year)
+                                .thenComparing(MonthYearDto::month)
+                )
+                .toList();
+
+        return ResponseEntity.ok(months);
+    }
+
+    @GetMapping("/paid-invoices/{cpf}/{bank}/{month}/{year}")
+    public ResponseEntity<List<Transaction>> getPaidInvoicesForMonth(
+            @PathVariable String cpf,
+            @PathVariable Bank bank,
+            @PathVariable int month,
+            @PathVariable int year
+    ) {
+        return ResponseEntity.ok(service.getPaidInvoicesForMonth(cpf, bank, month, year));
+    }
+
+    @GetMapping("/history/{cpf}/{bank}/{month}/{year}")
+    public ResponseEntity<List<Transaction>> getMonthlyHistory(
+            @PathVariable String cpf,
+            @PathVariable Bank bank,
+            @PathVariable int month,
+            @PathVariable int year
+    ) {
+        List<Transaction> history = service.getHistoryForMonth(cpf, bank, month, year);
+        return ResponseEntity.ok(history);
     }
 
 

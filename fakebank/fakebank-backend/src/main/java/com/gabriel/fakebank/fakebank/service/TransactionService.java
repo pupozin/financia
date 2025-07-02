@@ -276,7 +276,24 @@ public class TransactionService {
         }
     }
 
+    public List<Transaction> getPaidInvoicesForMonth(String cpf, Bank bank, int month, int year) {
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end = YearMonth.of(year, month).atEndOfMonth();
+
+        return repository.findPaidInvoices(cpf, bank).stream()
+                .filter(t -> !t.getDate().isBefore(start) && !t.getDate().isAfter(end))
+                .toList();
+    }
+
+    public List<Transaction> getHistoryForMonth(String cpf, Bank bank, int month, int year) {
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end = YearMonth.of(year, month).atEndOfMonth();
+        return repository.findAllByCpfAndBankAndDateBetween(cpf, bank, start, end);
+    }
+
+
     public List<Transaction> getPaidInvoices(String cpf, Bank bank) {
         return repository.findPaidInvoices(cpf, bank);
     }
 }
+

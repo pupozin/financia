@@ -9,60 +9,48 @@ class InvoiceScreen extends StatelessWidget {
   final double invoiceTotal;
   final List<Map<String, dynamic>> transactions;
 
-  const InvoiceScreen({super.key, required this.invoiceTotal, required this.transactions});
+  const InvoiceScreen({
+    super.key,
+    required this.invoiceTotal,
+    required this.transactions,
+  });
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
 
-    final currentMonthData = transactions.where((item) {
+    final filtered = transactions.where((item) {
       final dateStr = item['date'];
       final timeStr = item['time'];
       final method = item['method'];
-
-      if (dateStr == null || dateStr == '' || timeStr == null || timeStr == '') return false;
-      if (method == null) return false;
+      if (dateStr == null || timeStr == null || method == null) return false;
 
       final methodUpper = method.toString().toUpperCase();
       final category = item['category']?.toString().toLowerCase() ?? '';
 
       final isCredit = methodUpper == 'CREDIT';
       final isFaturaDebit = methodUpper == 'DEBIT' && category == 'invoice';
-
-      if (!isCredit && !isFaturaDebit) return false;
-
-      final dateOnly = DateTime.tryParse(dateStr);
-      return dateOnly != null && dateOnly.month == now.month && dateOnly.year == now.year;
+      return isCredit || isFaturaDebit;
     }).toList();
 
-    currentMonthData.sort((a, b) {
+    filtered.sort((a, b) {
       final aDate = DateTime.tryParse('${a['date']} ${a['time']}') ?? DateTime(2000);
       final bDate = DateTime.tryParse('${b['date']} ${b['time']}') ?? DateTime(2000);
       return bDate.compareTo(aDate);
     });
 
-    final Map<String, List<Map<String, dynamic>>> grouped = {};
-    for (var item in currentMonthData) {
-      final dateStr = item['date'];
-      final date = DateTime.tryParse(dateStr);
+    // 3. Agrupa por data (hoje, ontem ou dia/mês)
+    final Map<DateTime, List<Map<String, dynamic>>> grouped = {};
+    for (var item in filtered) {
+      final date = DateTime.tryParse(item['date']);
       if (date == null) continue;
 
-      String label;
-      final yesterday = now.subtract(const Duration(days: 1));
-
-      if (date.day == now.day && date.month == now.month && date.year == now.year) {
-        label = 'Today';
-      } else if (date.day == yesterday.day && date.month == yesterday.month && date.year == yesterday.year) {
-        label = 'Yesterday';
-      } else {
-        label = '${date.day} ${_monthAbbreviation(date.month)}';
-      }
-
-      grouped.putIfAbsent(label, () => []).add(item);
+      final normalized = DateTime(date.year, date.month, date.day);
+      grouped.putIfAbsent(normalized, () => []).add(item);
     }
 
     final sortedEntries = grouped.entries.toList()
-      ..sort((a, b) => _parseDate(b.key).compareTo(_parseDate(a.key)));
+      ..sort((a, b) => b.key.compareTo(a.key));
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 20, 20, 20),
@@ -156,7 +144,17 @@ class InvoiceScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionGroup(MapEntry<String, List<Map<String, dynamic>>> entry) {
+  Widget _buildTransactionGroup(MapEntry<DateTime, List<Map<String, dynamic>>> entry) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    final label = entry.key == today
+        ? 'Today'
+        : entry.key == yesterday
+            ? 'Yesterday'
+            : '${entry.key.day} ${_monthAbbreviation(entry.key.month)}';
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
@@ -165,7 +163,7 @@ class InvoiceScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              entry.key,
+              label,
               style: GoogleFonts.poppins(
                 color: Colors.white70,
                 fontWeight: FontWeight.w600,
@@ -249,27 +247,7 @@ class InvoiceScreen extends StatelessWidget {
     final nextMonth = (now.month == 12) ? 1 : now.month + 1;
     final year = (now.month == 12) ? now.year + 1 : now.year;
     final date = DateTime(year, nextMonth, day);
-
     final monthName = _monthAbbreviation(date.month);
     return '$monthName ${date.day}';
-  }
-
-  DateTime _parseDate(String label) {
-    if (label == 'Today') return DateTime.now();
-    if (label == 'Yesterday') return DateTime.now().subtract(const Duration(days: 1));
-    final parts = label.split(' ');
-    if (parts.length != 2) return DateTime(2000);
-    final day = int.tryParse(parts[0]) ?? 1;
-    final month = _monthIndex(parts[1]);
-    return DateTime(DateTime.now().year, month, day);
-  }
-
-  int _monthIndex(String abbr) {
-    const months = {
-      'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4,
-      'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8,
-      'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12,
-    };
-    return months[abbr] ?? 1;
   }
 }
