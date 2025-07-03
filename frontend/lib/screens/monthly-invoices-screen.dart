@@ -2,6 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:frontend/models/login-response.dart';
+import 'package:frontend/services/api-service.dart';
 
 class MonthlyInvoicesScreen extends StatefulWidget {
   const MonthlyInvoicesScreen({super.key});
@@ -16,26 +20,77 @@ class _MonthlyInvoicesScreenState extends State<MonthlyInvoicesScreen> {
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
 
-  List<Map<String, dynamic>> availableMonths = [
-    {'month': 2, 'year': 2025, 'label': 'Feb 2025'},
-    {'month': 3, 'year': 2025, 'label': 'Mar 2025'},
-    {'month': 4, 'year': 2025, 'label': 'Apr 2025'},
-    {'month': 5, 'year': 2025, 'label': 'May 2025'},
-    {'month': 6, 'year': 2025, 'label': 'Jun 2025'},
-    {'month': 7, 'year': 2025, 'label': 'Jul 2025'},
-  ];
-
-  int selectedIndex = 2;
+  List<Map<String, dynamic>> availableMonths = [];
+  int selectedIndex = -1;
   List<dynamic> allTransactions = [];
   bool isLoading = true;
 
-  final String cpf = '18398375000';
-  final String bank = 'NIBANK';
+  String cpf = '';
+  List<String> banks = [];
 
   @override
   void initState() {
     super.initState();
-    loadAllTransactions();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString('user');
+    if (userJson != null) {
+      final login = LoginResponse.fromJson(jsonDecode(userJson));
+      cpf = login.cpf;
+
+      final api = ApiService();
+      banks = await api.getAuthorizedBanks(cpf);
+
+      await loadAvailableMonths();
+    }
+  }
+
+  Future<void> loadAvailableMonths() async {
+    final host = kIsWeb ? 'localhost' : '10.0.2.2';
+    final List<Map<String, dynamic>> allMonths = [];
+
+    for (final bank in banks) {
+      final url = Uri.parse('http://$host:8081/api/transaction/paid-invoices/months/$cpf/$bank');
+      final resp = await http.get(url);
+
+      if (resp.statusCode == 200) {
+        final List<dynamic> raw = jsonDecode(resp.body);
+        final parsed = raw.map((m) {
+          return {
+            'month': m['month'],
+            'year': m['year'],
+            'label': '${months[m['month'] - 1]} ${m['year']}',
+          };
+        });
+        allMonths.addAll(parsed);
+      }
+    }
+
+    final unique = {
+      for (var m in allMonths) '${m['month']}-${m['year']}': m
+    }.values.toList();
+
+    unique.sort((a, b) {
+      final aDate = DateTime(a['year'], a['month']);
+      final bDate = DateTime(b['year'], b['month']);
+      return aDate.compareTo(bDate);
+    });
+
+    setState(() {
+      availableMonths = unique;
+      if (availableMonths.length >= 3) {
+        selectedIndex = 2;
+      } else if (availableMonths.isNotEmpty) {
+        selectedIndex = 0;
+      }
+    });
+
+    if (selectedIndex != -1) {
+      await loadAllTransactions();
+    }
   }
 
   Future<void> loadAllTransactions() async {
@@ -43,20 +98,21 @@ class _MonthlyInvoicesScreenState extends State<MonthlyInvoicesScreen> {
     final selected = availableMonths[selectedIndex];
     final month = selected['month'];
     final year = selected['year'];
+    final host = kIsWeb ? 'localhost' : '10.0.2.2';
 
-    final txUrl = Uri.parse('http://localhost:8081/api/transaction/$cpf/$bank');
-    final invoiceUrl = Uri.parse(
-        'http://localhost:8081/api/transaction/paid-invoices/$cpf/$bank/$month/$year');
+    final List<dynamic> allTx = [];
+    final List<dynamic> allInvoices = [];
 
-    try {
+    for (final bank in banks) {
+      final txUrl = Uri.parse('http://$host:8081/api/transaction/$cpf/$bank');
+      final invoiceUrl = Uri.parse('http://$host:8081/api/transaction/paid-invoices/$cpf/$bank/$month/$year');
+
       final txResponse = await http.get(txUrl);
       final invoiceResponse = await http.get(invoiceUrl);
 
-      if (txResponse.statusCode == 200 && invoiceResponse.statusCode == 200) {
-        final allTx = jsonDecode(txResponse.body);
-        final allInvoices = jsonDecode(invoiceResponse.body);
-
-        final filteredCredit = allTx.where((tx) {
+      if (txResponse.statusCode == 200) {
+        final txList = jsonDecode(txResponse.body);
+        final filteredCredit = txList.where((tx) {
           final date = DateTime.tryParse(tx['date'] ?? '');
           final method = tx['method']?.toString()?.toUpperCase();
           return date != null &&
@@ -67,23 +123,23 @@ class _MonthlyInvoicesScreenState extends State<MonthlyInvoicesScreen> {
           tx['isPaidInvoice'] = false;
           return tx;
         }).toList();
+        allTx.addAll(filteredCredit);
+      }
 
-        final invoiceWithFlag = allInvoices.map((invoice) {
+      if (invoiceResponse.statusCode == 200) {
+        final invoiceList = jsonDecode(invoiceResponse.body);
+        final invoiceWithFlag = invoiceList.map((invoice) {
           invoice['isPaidInvoice'] = true;
           return invoice;
         }).toList();
-
-        setState(() {
-          allTransactions = [...filteredCredit, ...invoiceWithFlag];
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Erro na resposta da API');
+        allInvoices.addAll(invoiceWithFlag);
       }
-    } catch (e) {
-      setState(() => isLoading = false);
-      print('Erro ao carregar dados: $e');
     }
+
+    setState(() {
+      allTransactions = [...allTx, ...allInvoices];
+      isLoading = false;
+    });
   }
 
   List<Map<String, dynamic>> get visibleMonths {
@@ -135,7 +191,7 @@ class _MonthlyInvoicesScreenState extends State<MonthlyInvoicesScreen> {
                   ),
                   const SizedBox(height: 30),
                   SizedBox(
-                    height: 32,
+                    height: 30,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: visibleMonths.map((month) {
@@ -144,14 +200,14 @@ class _MonthlyInvoicesScreenState extends State<MonthlyInvoicesScreen> {
 
                         return Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
                             child: GestureDetector(
                               onTap: () async {
                                 setState(() => selectedIndex = trueIndex);
                                 await loadAllTransactions();
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding: const EdgeInsets.symmetric(vertical: 3),
                                 decoration: BoxDecoration(
                                   color: isSelected ? Colors.blue : Colors.grey[800],
                                   borderRadius: BorderRadius.circular(16),
@@ -185,7 +241,6 @@ class _MonthlyInvoicesScreenState extends State<MonthlyInvoicesScreen> {
                             ? '${date.day} ${months[date.month - 1].toUpperCase()}'
                             : '';
                         final isPaidInvoice = tx['isPaidInvoice'] == true;
-
                         final textColor = isPaidInvoice ? Colors.green : Colors.white;
 
                         return Padding(
