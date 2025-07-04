@@ -52,7 +52,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onAvatarTap: () => setState(() => _selectedIndex = 3),
               onToggleMenu: () => setState(() => _showMenu = !_showMenu),
             ),
-            const ChartScreen(),
+            ChartScreen(
+                userName: user.name,
+                onAvatarTap: () => setState(() => _selectedIndex = 3),
+                onToggleMenu: () => setState(() => _showMenu = !_showMenu),
+              ),
             const WalletScreen(),
             const ProfileScreen(),
           ]);

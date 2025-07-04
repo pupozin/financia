@@ -39,7 +39,7 @@ class InvoiceScreen extends StatelessWidget {
       return bDate.compareTo(aDate);
     });
 
-    // 3. Agrupa por data (hoje, ontem ou dia/mês)
+   
     final Map<DateTime, List<Map<String, dynamic>>> grouped = {};
     for (var item in filtered) {
       final date = DateTime.tryParse(item['date']);

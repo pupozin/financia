@@ -4,6 +4,8 @@ import 'package:frontend/models/login-response.dart';
 import 'package:frontend/screens/invoice-screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:frontend/widget/header.dart';
+
 
 class HomeDashboard extends StatelessWidget {
   final LoginResponse user;
@@ -64,24 +66,12 @@ class HomeDashboard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: onAvatarTap,
-                      child: const CircleAvatar(
-                        backgroundImage: AssetImage('images/avatar.png'),
-                        radius: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(user.name, style: GoogleFonts.inter(color: Colors.white, fontSize: 18)),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: onToggleMenu,
-                      child: const Icon(FontAwesomeIcons.barsStaggered, color: Colors.white),
-                    ),
-                  ],
-                ),
+             SharedDashboardHeader(
+  userName: user.name,
+  onAvatarTap: onAvatarTap,
+  onToggleMenu: onToggleMenu,
+)
+,
                 const SizedBox(height: 45),
                 Padding(
                   padding: const EdgeInsets.only(left: 15),
