@@ -1,4 +1,3 @@
-// lib/services/api_service.dart
 import 'dart:convert';
 import 'package:frontend/models/dashboard-data.dart';
 import 'package:http/http.dart' as http;
@@ -90,6 +89,25 @@ Future<List<String>> getAvailableBanks() async {
     } else {
       throw Exception('Erro ao buscar dados do dashboard');
     }
+  }
+
+  
+  Future<Map<String, dynamic>> getMonthlySummary(String cpf, String bank, int month, int year) async {
+    final url = Uri.parse('$_fakebankBase/transaction/summary/$cpf/$bank/$month/$year');
+    final resp = await http.get(url);
+    if (resp.statusCode == 200) {
+      return jsonDecode(resp.body) as Map<String, dynamic>;
+    }
+    throw Exception('Erro ao buscar resumo mensal ($bank $month/$year)');
+  }
+
+  Future<List<dynamic>> getMonthlyHistory(String cpf, String bank, int month, int year) async {
+    final url = Uri.parse('$_fakebankBase/transaction/history/$cpf/$bank/$month/$year');
+    final resp = await http.get(url);
+    if (resp.statusCode == 200) {
+      return jsonDecode(resp.body) as List<dynamic>;
+    }
+    throw Exception('Erro ao buscar histórico mensal ($bank $month/$year)');
   }
 }
 
