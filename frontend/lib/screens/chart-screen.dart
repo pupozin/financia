@@ -75,6 +75,28 @@ class _ChartScreenState extends State<ChartScreen> {
     }
   }
 
+
+bool _isIncomeTx(Map<String, dynamic> tx) {
+  final method = (tx['method'] ?? '').toString().toUpperCase();
+  final type   = (tx['transactionType'] ?? tx['type'] ?? '').toString().toUpperCase();
+  final cat    = (tx['category'] ?? '').toString().toLowerCase();
+
+  return method == 'INCOME' ||
+         type   == 'INCOME'  ||
+         cat == 'salary' || cat == 'salario' || cat == 'deposit' || cat == 'income';
+}
+
+bool _isExpenseTx(Map<String, dynamic> tx) {
+  final method = (tx['method'] ?? '').toString().toUpperCase();
+  final cat    = (tx['category'] ?? '').toString().toLowerCase();
+
+  // considera como despesa:
+  // - DEBIT e CREDIT (compra no crédito é gasto)
+  // - ou categoria invoice (fatura)
+  return method == 'DEBIT' || method == 'CREDIT' || cat == 'invoice';
+}
+
+
   Future<void> _loadChartData() async {
     setState(() => isLoading = true);
 
@@ -170,11 +192,13 @@ class _ChartScreenState extends State<ChartScreen> {
   Future<void> _loadLast7Days() async {
   final now = DateTime.now();
 
+  // constrói a janela móvel dos últimos 7 dias
   final List<DateTime> days = List.generate(7, (i) {
     final d = now.subtract(Duration(days: 6 - i));
     return DateTime(d.year, d.month, d.day);
   });
 
+  // garante no cache o(s) mês(es) envolvidos
   final uniqueMonths = <String>{};
   for (final d in days) {
     uniqueMonths.add('${d.year}-${d.month}');
@@ -202,17 +226,9 @@ class _ChartScreenState extends State<ChartScreen> {
         final dt = DateTime.tryParse(dateStr);
         if (dt == null) continue;
         if (dt.year == d.year && dt.month == d.month && dt.day == d.day) {
-          final method = tx['method']?.toString()?.toUpperCase();
           final amount = (tx['amount'] ?? 0).toDouble();
-
-          // receita: só INCOME
-          if (method == 'INCOME') {
-            inc += amount;
-          }
-          // despesa: DEBIT e CREDIT contam como gasto
-          else if (method == 'DEBIT' || method == 'CREDIT') {
-            exp += amount;
-          }
+          if (_isIncomeTx(tx))  inc += amount;
+          if (_isExpenseTx(tx)) exp += amount;
         }
       }
     }
@@ -221,7 +237,7 @@ class _ChartScreenState extends State<ChartScreen> {
     expense.add(exp);
   }
 
-  incomeSeries = income;
+  incomeSeries  = income;
   expenseSeries = expense;
 }
 
