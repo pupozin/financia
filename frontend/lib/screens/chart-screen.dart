@@ -84,9 +84,7 @@ class _ChartScreenState extends State<ChartScreen> {
       } else if (selectedTimeFilter == 'Year') {
         await _loadLast5Years();
       } else if (selectedTimeFilter == 'Week') {
-        await _loadLast7Days(); // baseado no histórico do mês atual
-      } else if (selectedTimeFilter == 'Day') {
-        await _loadTodayByHours(); // simples/agregado por dia (1 ponto)
+        await _loadLast7Days();
       }
     } catch (e) {
       debugPrint('Erro ao carregar dados do gráfico: $e');
@@ -170,56 +168,30 @@ class _ChartScreenState extends State<ChartScreen> {
 
   // Últimos 7 dias (do mês atual, somando por dia)
   Future<void> _loadLast7Days() async {
-    final now = DateTime.now();
-    // carrega histórico do mês atual pra cada banco (com cache)
-    await _ensureCurrentMonthHistoryLoaded(now.month, now.year);
+  final now = DateTime.now();
 
-    final List<DateTime> days = List.generate(7, (i) {
-      final d = now.subtract(Duration(days: 6 - i));
-      return DateTime(d.year, d.month, d.day);
-    });
+  final List<DateTime> days = List.generate(7, (i) {
+    final d = now.subtract(Duration(days: 6 - i));
+    return DateTime(d.year, d.month, d.day);
+  });
 
-    labels = days.map((d) => '${d.day}/${d.month}').toList();
-
-    final List<double> income = [];
-    final List<double> expense = [];
-
-    for (final d in days) {
-      double inc = 0;
-      double exp = 0;
-
-      for (final bank in banks) {
-        final hist = _historyCacheByBank[bank] ?? [];
-        for (final tx in hist) {
-          final dateStr = tx['date']?.toString() ?? '';
-          final dt = DateTime.tryParse(dateStr);
-          if (dt == null) continue;
-          if (dt.year == d.year && dt.month == d.month && dt.day == d.day) {
-            final method = tx['method']?.toString()?.toUpperCase();
-            final amount = (tx['amount'] ?? 0).toDouble();
-            if (method == 'INCOME' || method == 'CREDIT') {
-              inc += amount; // se "income" vier como transação, soma aqui; se não, ajuste pra sua regra
-            } else if (method == 'DEBIT') {
-              exp += amount;
-            }
-          }
-        }
-      }
-
-      income.add(inc);
-      expense.add(exp);
-    }
-
-    incomeSeries = income;
-    expenseSeries = expense;
+  final uniqueMonths = <String>{};
+  for (final d in days) {
+    uniqueMonths.add('${d.year}-${d.month}');
+  }
+  for (final key in uniqueMonths) {
+    final parts = key.split('-');
+    final y = int.parse(parts[0]);
+    final m = int.parse(parts[1]);
+    await _ensureHistoryLoaded(m, y);
   }
 
-  // Hoje (um ponto só — agregando o dia atual)
-  Future<void> _loadTodayByHours() async {
-    final now = DateTime.now();
-    await _ensureCurrentMonthHistoryLoaded(now.month, now.year);
+  labels = days.map((d) => '${d.day}/${d.month}').toList();
 
-    labels = ['Today'];
+  final List<double> income = [];
+  final List<double> expense = [];
+
+  for (final d in days) {
     double inc = 0;
     double exp = 0;
 
@@ -229,29 +201,49 @@ class _ChartScreenState extends State<ChartScreen> {
         final dateStr = tx['date']?.toString() ?? '';
         final dt = DateTime.tryParse(dateStr);
         if (dt == null) continue;
-        if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+        if (dt.year == d.year && dt.month == d.month && dt.day == d.day) {
           final method = tx['method']?.toString()?.toUpperCase();
           final amount = (tx['amount'] ?? 0).toDouble();
-          if (method == 'INCOME' || method == 'CREDIT') {
+
+          // receita: só INCOME
+          if (method == 'INCOME') {
             inc += amount;
-          } else if (method == 'DEBIT') {
+          }
+          // despesa: DEBIT e CREDIT contam como gasto
+          else if (method == 'DEBIT' || method == 'CREDIT') {
             exp += amount;
           }
         }
       }
     }
 
-    incomeSeries = [inc];
-    expenseSeries = [exp];
+    income.add(inc);
+    expense.add(exp);
   }
 
-  Future<void> _ensureCurrentMonthHistoryLoaded(int month, int year) async {
-    for (final bank in banks) {
-      if (_historyCacheByBank.containsKey(bank)) continue;
-      final hist = await _api.getMonthlyHistory(cpf!, bank, month, year);
-      _historyCacheByBank[bank] = hist;
+  incomeSeries = income;
+  expenseSeries = expense;
+}
+
+
+Future<void> _ensureHistoryLoaded(int month, int year) async {
+  for (final bank in banks) {
+    // cache por banco (histórico pode acumular de vários meses)
+    if (!_historyCacheByBank.containsKey(bank)) {
+      _historyCacheByBank[bank] = [];
     }
+    // já tem itens desse mês/ano no cache?
+    final hasThisMonth = _historyCacheByBank[bank]!.any((tx) {
+      final dt = DateTime.tryParse(tx['date']?.toString() ?? '');
+      return dt != null && dt.month == month && dt.year == year;
+    });
+    if (hasThisMonth) continue;
+
+    final hist = await _api.getMonthlyHistory(cpf!, bank, month, year);
+    // acumula (não sobrescreve) pra manter meses diferentes no mesmo cache
+    _historyCacheByBank[bank]!.addAll(hist);
   }
+}
 
   // -----------------------------
   // UI
@@ -319,10 +311,9 @@ class _ChartScreenState extends State<ChartScreen> {
 
                         const SizedBox(height: 30),
 
-                        // Filtros por tempo
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: ["Day", "Week", "Month", "Year"].map((label) {
+                          children: ["Week", "Month", "Year"].map((label) {
                             final isSelected = label == selectedTimeFilter;
                             return GestureDetector(
                               onTap: () async {
@@ -331,7 +322,6 @@ class _ChartScreenState extends State<ChartScreen> {
                                   selectedTimeFilter = label;
                                   isLoading = true;
                                 });
-                                // quando troca o filtro, recarrega dados
                                 await _loadChartData();
                               },
                               child: Text(
